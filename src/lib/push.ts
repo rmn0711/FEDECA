@@ -3,6 +3,7 @@ import webpush from "web-push";
 import { eq, inArray } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { pushSubscriptions } from "@/lib/db/schema";
+import { sendTeams } from "@/lib/teams/send";
 
 let configured: boolean | null = null;
 
@@ -20,6 +21,13 @@ export function pushEnabled() {
  * Las suscripciones vencidas (el navegador las revocó) se eliminan.
  */
 export async function sendPush(userIds: number[], payload: { title: string; body: string; url: string; tag?: string }) {
+  await Promise.all([
+    sendBrowserPush(userIds, payload).catch(() => console.error("[conecta] No se pudo procesar el aviso push.")),
+    sendTeams(userIds, payload).catch(() => console.error("[conecta] No se pudo procesar el aviso de Teams.")),
+  ]);
+}
+
+async function sendBrowserPush(userIds: number[], payload: { title: string; body: string; url: string; tag?: string }) {
   if (!pushEnabled() || userIds.length === 0) return;
   const db = await getDb();
   const subs = await db.select().from(pushSubscriptions).where(inArray(pushSubscriptions.userId, userIds));
@@ -39,3 +47,4 @@ export async function sendPush(userIds: number[], payload: { title: string; body
     })
   );
 }
+
