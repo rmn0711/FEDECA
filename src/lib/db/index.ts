@@ -1,6 +1,7 @@
 import "server-only";
 import { drizzle as drizzlePostgres, type PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
+import { createHash } from "node:crypto";
 import bcrypt from "bcryptjs";
 import { sql } from "drizzle-orm";
 import * as schema from "./schema";
@@ -43,9 +44,12 @@ async function connect(): Promise<DB> {
 
   if (url) {
     // prepare:false → compatible con el pooler de Supabase (modo transacción).
-    const client = postgres(url, { prepare: false, max: 5 });
+    // Conexiones que se renuevan solas: una función cortada por Vercel no deja una conexión colgada mucho tiempo.
+    const client = postgres(url, { prepare: false, max: 5, idle_timeout: 20, max_lifetime: 60 * 5, connect_timeout: 15 });
     db = drizzlePostgres(client, { schema });
-    run = (statement) => client.unsafe(statement);
+    await migratePostgres(client);
+    await seed(db);
+    return db;
   } else {
     // Sin DATABASE_URL se usa PostgreSQL embebido (PGlite) en ./.data — solo para desarrollo.
     const { PGlite } = await import("@electric-sql/pglite");
@@ -58,6 +62,43 @@ async function connect(): Promise<DB> {
   for (const statement of SCHEMA_SQL) await run(statement);
   await seed(db);
   return db;
+}
+
+const SCHEMA_VERSION = createHash("sha1").update(SCHEMA_SQL.join("\n")).digest("hex");
+
+/**
+ * Migraciones en Postgres: solo cuando el esquema cambió (huella en hd_settings). Un ALTER TABLE pide un
+ * bloqueo exclusivo aunque la columna ya exista; si hubiera consultas abiertas, haría esperar a toda la
+ * plataforma. Por eso cada instrucción espera el bloqueo máximo 3 s y, si no lo consigue, se reintenta
+ * en el próximo arranque sin frenar a nadie.
+ */
+async function migratePostgres(client: postgres.Sql) {
+  try {
+    const rows = await client.unsafe("select value from hd_settings where key = 'schema_version'");
+    if (rows[0]?.value === SCHEMA_VERSION) return;
+  } catch {
+    // Base nueva: la tabla de configuración aún no existe.
+  }
+  let complete = true;
+  for (const statement of SCHEMA_SQL) {
+    try {
+      await client.begin(async (tx) => {
+        await tx.unsafe("set local lock_timeout = '3s'");
+        await tx.unsafe(statement);
+      });
+    } catch (e) {
+      const code = (e as { code?: string }).code;
+      if (code !== "55P03") throw e; // 55P03 = no se obtuvo el bloqueo a tiempo
+      complete = false;
+      console.warn("[conecta] Migración aplazada (tabla en uso):", statement.slice(0, 80));
+    }
+  }
+  if (complete) {
+    await client.unsafe(
+      "insert into hd_settings (key, value) values ('schema_version', $1) on conflict (key) do update set value = excluded.value",
+      [SCHEMA_VERSION]
+    );
+  }
 }
 
 export function getDb(): Promise<DB> {
