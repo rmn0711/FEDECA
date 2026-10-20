@@ -170,6 +170,27 @@ automáticamente por API desde el CRM o el cotizador: `POST /api/marketing/metri
 **Configuración → Auditoría**: ingresos y intentos fallidos, cambios de usuarios, roles y permisos, categorías,
 configuración, proyectos, canales, plantillas, aprobaciones, métricas y exportaciones, con fecha, persona e IP.
 
+## WhatsApp por la API oficial de Meta
+
+Si se configuran `WHATSAPP_META_TOKEN` y `WHATSAPP_META_PHONE_NUMBER_ID`, las alertas salen desde el número oficial de la
+empresa, directo desde el servidor (sin PC encendido). El servicio vinculado por QR y el envío manual quedan de respaldo.
+
+- **Ventana de 24 h:** si la persona escribió al número en las últimas 24 h, el aviso va como mensaje normal (gratis, con
+  formato). Si no, se envía la plantilla aprobada `conecta_aviso` (categoría *Utilidad*, idioma *Español*):
+
+  > Hola {{1}}, tienes una novedad en Conecta ACF:
+  >
+  > {{2}}
+  >
+  > Puedes responder este mensaje para agregar un comentario.
+
+  `{{1}}` es el nombre y `{{2}}` el aviso en una línea (incluye el enlace). Meta cobra cada plantilla enviada según su tarifa
+  de Utilidad; los mensajes dentro de la ventana no se cobran.
+- **Respuestas:** webhook `https://<dominio>/api/whatsapp/meta` (campo *messages*). Se verifica con
+  `WHATSAPP_META_VERIFY_TOKEN` y cada llamada se valida con la firma `X-Hub-Signature-256` y `WHATSAPP_META_APP_SECRET`.
+  Una respuesta a una alerta queda como comentario de la solicitud; «BAJA» desactiva las alertas.
+- **Estados:** si Meta informa que un mensaje no se entregó, la bandeja lo muestra como fallido con el motivo.
+
 ## Seguridad
 
 - **Módulo de WhatsApp solo para el administrador**: el QR, la bandeja, el historial y los números de las personas

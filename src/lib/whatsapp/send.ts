@@ -4,6 +4,7 @@ import { after } from "next/server";
 import { getDb } from "@/lib/db";
 import { settings, users, whatsappLog } from "@/lib/db/schema";
 import type { WaPref } from "./templates";
+import { kickMetaOutbox, metaEnabled } from "./meta";
 
 /**
  * Bandeja de salida de WhatsApp. No usa la API de Meta: los mensajes quedan "pendientes" y
@@ -25,7 +26,7 @@ export function waLink(phone: string, text: string) {
 
 export async function enqueueWhatsapp(entry: { userId: number | null; phone: string; kind: string; body: string; ticketId?: number | null }) {
   const db = await getDb();
-  await db.insert(whatsappLog).values({
+  const [row] = await db.insert(whatsappLog).values({
     direction: "out",
     userId: entry.userId,
     phone: entry.phone,
@@ -33,7 +34,9 @@ export async function enqueueWhatsapp(entry: { userId: number | null; phone: str
     body: entry.body.slice(0, 4000),
     ticketId: entry.ticketId ?? null,
     status: "pendiente",
-  });
+  }).returning({ id: whatsappLog.id });
+  // Con la API oficial de Meta se envía de inmediato; si no, lo toma el servicio vinculado o el envío manual.
+  if (metaEnabled()) await kickMetaOutbox([row.id]);
 }
 
 export function wantsWhatsapp(u: { whatsappOptIn: boolean; whatsappPhone: string | null; whatsappPrefs: Record<string, boolean>; active: boolean }, pref: WaPref) {

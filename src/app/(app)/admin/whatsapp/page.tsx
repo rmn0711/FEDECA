@@ -2,6 +2,8 @@ import { requireRole } from "@/lib/auth";
 import { CheckCircle2, Inbox, MessageCircle, PlugZap, QrCode, Smartphone, Users, WifiOff } from "lucide-react";
 import { getBridgeState } from "@/lib/whatsapp/send";
 import { getWhatsappOverview } from "@/lib/whatsapp/queries";
+import { metaConfig } from "@/lib/whatsapp/meta";
+import { CopyLink } from "@/components/shared/copy-link";
 import { appUrl } from "@/lib/constants";
 import { formatDateTime, relativeTime } from "@/lib/format";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,6 +22,8 @@ export default async function WhatsappAdminPage() {
   const [bridge, o] = await Promise.all([getBridgeState(), getWhatsappOverview()]);
   const connected = bridge.state === "conectado";
   const tokenSet = Boolean(process.env.WHATSAPP_BRIDGE_TOKEN && process.env.WHATSAPP_BRIDGE_TOKEN.length >= 24);
+  const meta = metaConfig();
+  const metaWebhookReady = Boolean(process.env.WHATSAPP_META_APP_SECRET && process.env.WHATSAPP_META_VERIFY_TOKEN);
 
   return (
     <div className="space-y-6">
@@ -30,6 +34,34 @@ export default async function WhatsappAdminPage() {
           Las alertas salen desde tu WhatsApp, sin API y sin costo: automáticamente con el servicio vinculado o a mano con el botón «Enviar por WhatsApp».
         </p>
       </div>
+
+      <Card className={meta ? "border-[#1baf7a]/40" : undefined}>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <MessageCircle className="size-4 text-[#25d366]" />
+            API oficial de WhatsApp (Meta)
+            <Badge variant="outline" className={meta ? "border-[#1baf7a]/50 text-[#0f8a5f]" : ""}>{meta ? "Activa" : "Sin configurar"}</Badge>
+          </CardTitle>
+          <CardDescription>
+            {meta
+              ? "Las alertas salen desde el número de la empresa, sin PC encendido. Si la persona te escribió en las últimas 24 h va un mensaje normal (gratis); si no, la plantilla aprobada."
+              : "Configura WHATSAPP_META_TOKEN y WHATSAPP_META_PHONE_NUMBER_ID en Vercel para enviar desde el número oficial. Mientras tanto se usa el servicio vinculado o el envío manual."}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3 text-sm">
+          {meta && (
+            <div className="grid gap-2 sm:grid-cols-3">
+              <div><p className="text-xs text-muted-foreground">Id del número</p><p className="font-medium">••••{meta.phoneNumberId.slice(-4)}</p></div>
+              <div><p className="text-xs text-muted-foreground">Plantilla</p><p className="font-medium">{meta.template} · {meta.templateLang}</p></div>
+              <div><p className="text-xs text-muted-foreground">Respuestas (webhook)</p><p className="font-medium">{metaWebhookReady ? "Listo" : "Falta App Secret o token de verificación"}</p></div>
+            </div>
+          )}
+          <div className="space-y-1">
+            <p className="text-xs text-muted-foreground">URL del webhook (Meta → WhatsApp → Configuración → Webhook, campo «messages»)</p>
+            <CopyLink url={appUrl("/api/whatsapp/meta")} />
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatTile label="Servicio vinculado" value={connected ? "Conectado" : bridge.state === "qr" ? "Esperando QR" : "Desconectado"} hint={bridge.seenAt ? `Última señal ${relativeTime(bridge.seenAt)}` : "Nunca se ha conectado"} icon={connected ? PlugZap : WifiOff} accent={connected ? "aqua" : "orange"} />

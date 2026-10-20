@@ -1,6 +1,7 @@
 import { secretMatches } from "@/lib/secure";
 import { deliverDueReminders } from "@/lib/followups/service";
 import { deliverOverdueAlerts } from "@/lib/tickets/overdue";
+import { kickMetaOutbox } from "@/lib/whatsapp/meta";
 
 /** Entrega los recordatorios de seguimiento vencidos (Vercel Cron diario; también al abrir la plataforma y cuando consulta el servicio de WhatsApp). */
 export async function GET(request: Request) {
@@ -10,5 +11,6 @@ export async function GET(request: Request) {
   }
   const sent = await deliverDueReminders();
   const overdue = await deliverOverdueAlerts();
-  return Response.json({ ok: true, sent, overdue });
+  const whatsapp = await kickMetaOutbox();
+  return Response.json({ ok: true, sent, overdue, whatsapp });
 }

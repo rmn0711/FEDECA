@@ -6,6 +6,7 @@ import { OPEN_STATUSES, URGENCY_META, ticketCode, type Role } from "@/lib/consta
 import { unreadTotal } from "@/lib/chat/service";
 import { getBridgeState } from "@/lib/whatsapp/send";
 import { pendingWhatsappCount } from "@/lib/whatsapp/queries";
+import { metaEnabled } from "@/lib/whatsapp/meta";
 import { todayISO } from "@/lib/workspace/constants";
 import { relativeTime } from "@/lib/format";
 
@@ -153,7 +154,7 @@ export async function getAlerts(user: Actor): Promise<AlertsResult> {
       }
     }
 
-    if (user.role === "admin") {
+    if (user.role === "admin" && !metaEnabled()) {
       const [pendingWa, bridge] = await Promise.all([pendingWhatsappCount(), getBridgeState()]);
       if (pendingWa > 0 && bridge.state !== "conectado") {
         alerts.push({
