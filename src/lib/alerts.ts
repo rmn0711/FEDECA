@@ -1,5 +1,5 @@
 import "server-only";
-import { and, eq, inArray, isNull, ne, or, sql } from "drizzle-orm";
+import { and, eq, inArray, isNull, lte, ne, or, sql } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { categories, followups, tasks, tickets, projects } from "@/lib/db/schema";
 import { OPEN_STATUSES, URGENCY_META, ticketCode, type Role } from "@/lib/constants";
@@ -48,7 +48,7 @@ export async function getAlerts(user: Actor): Promise<AlertsResult> {
     const myFollowups = await db
       .select({ id: followups.id, title: followups.title, remindAt: followups.remindAt })
       .from(followups)
-      .where(and(eq(followups.ownerId, user.id), eq(followups.status, "pendiente"), sql`${followups.remindAt} <= ${endOfToday}`));
+      .where(and(eq(followups.ownerId, user.id), eq(followups.status, "pendiente"), lte(followups.remindAt, endOfToday)));
     for (const f of myFollowups) {
       const at = f.remindAt!;
       const passed = at <= now;

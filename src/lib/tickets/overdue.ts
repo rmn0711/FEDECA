@@ -1,5 +1,5 @@
 import "server-only";
-import { and, eq, inArray, isNull, lt, sql } from "drizzle-orm";
+import { and, eq, inArray, isNull, lt, ne, or, sql } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { categories, tickets } from "@/lib/db/schema";
 import { OPEN_STATUSES, URGENCY_META, ticketCode } from "@/lib/constants";
@@ -33,8 +33,11 @@ export async function deliverOverdueAlerts() {
     .where(
       and(
         inArray(tickets.status, OPEN_STATUSES),
-        sql`((${tickets.firstResponseAt} is null and ${tickets.responseDueAt} < ${now} and ${tickets.responseAlertedAt} is null)
-          or (${tickets.dueAt} < ${now} and ${tickets.dueAlertedAt} is null and ${tickets.status} <> 'en_espera'))`
+        // Operadores de Drizzle (no sql``): convierten la fecha según la columna; postgres-js no acepta Date en sql`` crudo.
+        or(
+          and(isNull(tickets.firstResponseAt), lt(tickets.responseDueAt, now), isNull(tickets.responseAlertedAt)),
+          and(lt(tickets.dueAt, now), isNull(tickets.dueAlertedAt), ne(tickets.status, "en_espera"))
+        )
       )
     )
     .limit(100);
