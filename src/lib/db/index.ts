@@ -7,6 +7,7 @@ import * as schema from "./schema";
 import { SCHEMA_SQL } from "./migrate";
 import { CATEGORIES } from "@/lib/categories";
 import { seedDefaultTeam } from "./team";
+import { seedWorkspace } from "./workspace-seed";
 
 export type DB = PostgresJsDatabase<typeof schema>;
 
@@ -57,6 +58,7 @@ async function seed(db: DB) {
   const [{ count }] = await db.select({ count: sql<number>`count(*)::int` }).from(schema.users);
   if (count === 0) await createInitialUsers(db);
   await seedDefaultTeam(db);
+  await seedWorkspace(db);
 }
 
 async function createInitialUsers(db: DB) {

@@ -1,5 +1,6 @@
-import { boolean, customType, integer, jsonb, pgTable, serial, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { boolean, customType, doublePrecision, integer, jsonb, pgTable, serial, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import type { Role, Status, Urgency } from "@/lib/constants";
+import type { ChecklistItem, TaskStatus } from "@/lib/workspace/constants";
 
 const bytea = customType<{ data: Uint8Array; driverData: Uint8Array }>({
   dataType: () => "bytea",
@@ -115,6 +116,71 @@ export const settings = pgTable("hd_settings", {
   key: text("key").primaryKey(),
   value: text("value").notNull(),
 });
+
+// ── Espacio de equipo ──
+
+export const projects = pgTable("hd_projects", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  icon: text("icon").notNull().default("📁"),
+  color: text("color").notNull().default("#d9342c"),
+  archived: boolean("archived").notNull().default(false),
+  sort: integer("sort").notNull().default(0),
+  createdBy: integer("created_by").references(() => users.id, { onDelete: "set null" }),
+  createdAt: ts("created_at").notNull().defaultNow(),
+});
+
+export const tasks = pgTable("hd_tasks", {
+  id: serial("id").primaryKey(),
+  projectId: integer("project_id")
+    .notNull()
+    .references(() => projects.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  description: text("description").notNull().default(""),
+  status: text("status").$type<TaskStatus>().notNull().default("por_hacer"),
+  priority: text("priority").$type<Urgency>().notNull().default("media"),
+  assigneeId: integer("assignee_id").references(() => users.id, { onDelete: "set null" }),
+  /** Fechas como texto AAAA-MM-DD (sin zona horaria) */
+  startDate: text("start_date"),
+  dueDate: text("due_date"),
+  tags: jsonb("tags").$type<string[]>().notNull().default([]),
+  checklist: jsonb("checklist").$type<ChecklistItem[]>().notNull().default([]),
+  sort: doublePrecision("sort").notNull().default(0),
+  ticketId: integer("ticket_id").references(() => tickets.id, { onDelete: "set null" }),
+  createdBy: integer("created_by").references(() => users.id, { onDelete: "set null" }),
+  createdAt: ts("created_at").notNull().defaultNow(),
+  updatedAt: ts("updated_at").notNull().defaultNow(),
+  completedAt: ts("completed_at"),
+});
+
+export const taskComments = pgTable("hd_task_comments", {
+  id: serial("id").primaryKey(),
+  taskId: integer("task_id")
+    .notNull()
+    .references(() => tasks.id, { onDelete: "cascade" }),
+  authorId: integer("author_id").references(() => users.id, { onDelete: "set null" }),
+  body: text("body").notNull(),
+  createdAt: ts("created_at").notNull().defaultNow(),
+});
+
+export const pages = pgTable("hd_pages", {
+  id: serial("id").primaryKey(),
+  parentId: integer("parent_id"),
+  projectId: integer("project_id").references(() => projects.id, { onDelete: "set null" }),
+  title: text("title").notNull().default("Sin título"),
+  icon: text("icon").notNull().default("📄"),
+  content: text("content").notNull().default(""),
+  sort: integer("sort").notNull().default(0),
+  createdBy: integer("created_by").references(() => users.id, { onDelete: "set null" }),
+  updatedBy: integer("updated_by").references(() => users.id, { onDelete: "set null" }),
+  createdAt: ts("created_at").notNull().defaultNow(),
+  updatedAt: ts("updated_at").notNull().defaultNow(),
+});
+
+export type Project = typeof projects.$inferSelect;
+export type Task = typeof tasks.$inferSelect;
+export type Page = typeof pages.$inferSelect;
 
 export type User = typeof users.$inferSelect;
 export type Ticket = typeof tickets.$inferSelect;

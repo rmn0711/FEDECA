@@ -16,6 +16,8 @@ import { TicketComposer } from "@/components/tickets/ticket-composer";
 import { ManagePanel, RequesterPanel } from "@/components/tickets/manage-panel";
 import { RatingCard } from "@/components/tickets/rating-card";
 import { CreatedToast } from "@/components/tickets/created-toast";
+import { ConvertToTask } from "@/components/workspace/convert-to-task";
+import { getProjects, getTaskForTicket } from "@/lib/workspace/queries";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -36,7 +38,9 @@ export default async function TicketPage({
   if (!detail) notFound();
   const { ticket, category, requester, assignee, responsible, canManage, isRequester } = detail;
   const def = getCategory(ticket.categorySlug);
-  const staff = canManage ? await getStaff() : [];
+  const [staff, teamProjects, linkedTask] = canManage
+    ? await Promise.all([getStaff(), getProjects(), getTaskForTicket(ticket.id)])
+    : [[], [], null];
   const closed = ticket.status === "cerrado";
   const knownKeys = new Set(def?.fields.map((f) => f.key));
   const extraFields = Object.entries(ticket.fields).filter(([k]) => !knownKeys.has(k));
@@ -133,6 +137,13 @@ export default async function TicketPage({
             />
           )}
           {isRequester && !canManage && <RequesterPanel ticketId={ticket.id} status={ticket.status} />}
+          {canManage && (
+            <ConvertToTask
+              ticketId={ticket.id}
+              projects={teamProjects.map((p) => ({ id: p.id, name: p.name, icon: p.icon }))}
+              linked={linkedTask}
+            />
+          )}
 
           <Card>
             <CardHeader>

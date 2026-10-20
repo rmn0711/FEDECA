@@ -5,7 +5,11 @@ import Image from "next/image";
 import { useEffect, useState, useTransition } from "react";
 import { usePathname } from "next/navigation";
 import {
+  CalendarDays,
   FolderKanban,
+  ListTodo,
+  NotebookText,
+  Users2,
   LayoutDashboard,
   LogOut,
   Mail,
@@ -48,6 +52,17 @@ function buildGroups({ isAdmin, isStaff }: { isAdmin: boolean; isStaff: boolean 
       ],
     },
   ];
+  if (isStaff) {
+    groups.push({
+      label: "Equipo",
+      links: [
+        { href: "/equipo", label: "Espacio de equipo", icon: Users2 },
+        { href: "/equipo/mis-tareas", label: "Mis tareas", icon: ListTodo },
+        { href: "/equipo/calendario", label: "Calendario", icon: CalendarDays },
+        { href: "/equipo/paginas", label: "Páginas", icon: NotebookText },
+      ],
+    });
+  }
   if (isAdmin) {
     groups.push({
       label: "Configuración",

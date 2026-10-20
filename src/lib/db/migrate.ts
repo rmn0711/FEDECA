@@ -95,4 +95,59 @@ export const SCHEMA_SQL = [
     key TEXT PRIMARY KEY,
     value TEXT NOT NULL
   )`,
+  // ── Espacio de equipo (proyectos, tareas y páginas) ──
+  `CREATE TABLE IF NOT EXISTS hd_projects (
+    id SERIAL PRIMARY KEY,
+    name TEXT NOT NULL,
+    description TEXT,
+    icon TEXT NOT NULL DEFAULT '📁',
+    color TEXT NOT NULL DEFAULT '#d9342c',
+    archived BOOLEAN NOT NULL DEFAULT FALSE,
+    sort INTEGER NOT NULL DEFAULT 0,
+    created_by INTEGER REFERENCES hd_users(id) ON DELETE SET NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`,
+  `CREATE TABLE IF NOT EXISTS hd_tasks (
+    id SERIAL PRIMARY KEY,
+    project_id INTEGER NOT NULL REFERENCES hd_projects(id) ON DELETE CASCADE,
+    title TEXT NOT NULL,
+    description TEXT NOT NULL DEFAULT '',
+    status TEXT NOT NULL DEFAULT 'por_hacer' CHECK (status IN ('por_hacer','en_curso','en_revision','hecho')),
+    priority TEXT NOT NULL DEFAULT 'media' CHECK (priority IN ('alta','media','baja')),
+    assignee_id INTEGER REFERENCES hd_users(id) ON DELETE SET NULL,
+    start_date TEXT,
+    due_date TEXT,
+    tags JSONB NOT NULL DEFAULT '[]'::jsonb,
+    checklist JSONB NOT NULL DEFAULT '[]'::jsonb,
+    sort DOUBLE PRECISION NOT NULL DEFAULT 0,
+    ticket_id INTEGER REFERENCES hd_tickets(id) ON DELETE SET NULL,
+    created_by INTEGER REFERENCES hd_users(id) ON DELETE SET NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    completed_at TIMESTAMPTZ
+  )`,
+  `CREATE INDEX IF NOT EXISTS hd_tasks_project_idx ON hd_tasks(project_id)`,
+  `CREATE INDEX IF NOT EXISTS hd_tasks_assignee_idx ON hd_tasks(assignee_id)`,
+  `CREATE TABLE IF NOT EXISTS hd_task_comments (
+    id SERIAL PRIMARY KEY,
+    task_id INTEGER NOT NULL REFERENCES hd_tasks(id) ON DELETE CASCADE,
+    author_id INTEGER REFERENCES hd_users(id) ON DELETE SET NULL,
+    body TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`,
+  `CREATE INDEX IF NOT EXISTS hd_task_comments_task_idx ON hd_task_comments(task_id)`,
+  `CREATE TABLE IF NOT EXISTS hd_pages (
+    id SERIAL PRIMARY KEY,
+    parent_id INTEGER REFERENCES hd_pages(id) ON DELETE CASCADE,
+    project_id INTEGER REFERENCES hd_projects(id) ON DELETE SET NULL,
+    title TEXT NOT NULL DEFAULT 'Sin título',
+    icon TEXT NOT NULL DEFAULT '📄',
+    content TEXT NOT NULL DEFAULT '',
+    sort INTEGER NOT NULL DEFAULT 0,
+    created_by INTEGER REFERENCES hd_users(id) ON DELETE SET NULL,
+    updated_by INTEGER REFERENCES hd_users(id) ON DELETE SET NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`,
+  `CREATE INDEX IF NOT EXISTS hd_pages_parent_idx ON hd_pages(parent_id)`,
 ];
