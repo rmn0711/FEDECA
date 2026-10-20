@@ -28,6 +28,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { UserAvatar } from "@/components/shared/user-avatar";
 import { StickerPicker } from "@/components/chat/sticker-picker";
 import { isUploadedSticker, messageSticker, stickerMessage, stickerSource } from "@/lib/chat/stickers";
+import { searchChatTasksAction } from "@/lib/actions/chat-tasks";
+import { insertTaskMention, taskMentionQuery, type TaskMention } from "@/lib/chat/task-mentions";
 
 const POLL_MS = 3000;
 const QUICK = ["👍", "❤️", "😂", "🎉", "👀", "✅", "🙌", "🔥"];
@@ -68,11 +70,9 @@ function MessageBody({ body, meName }: { body: string; meName: string }) {
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
-          a: ({ href, children }) => (
-            <a href={href} target="_blank" rel="noreferrer noopener">
-              {children}
-            </a>
-          ),
+          a: ({ href, children }) => /^\/equipo\/proyectos\/\d+\?tarea=\d+$/.test(href ?? "") ? (
+            <Link href={href!} className="rounded bg-[#d9342c]/10 px-1 font-medium text-[#d9342c]">{children}</Link>
+          ) : <a href={href} target="_blank" rel="noreferrer noopener">{children}</a>,
         }}
       >
         {withMentions}
@@ -102,6 +102,9 @@ export function ConversationView({
   const [items, setItems] = useState<ChatMessage[]>(initialMessages);
   const [hasMore, setHasMore] = useState(initialHasMore);
   const [body, setBody] = useState("");
+  const [caret, setCaret] = useState<number | null>(null);
+  const [taskIndex, setTaskIndex] = useState(0);
+  const [taskResults, setTaskResults] = useState<{ key: string; tasks: TaskMention[]; error?: string } | null>(null);
   const [files, setFiles] = useState<File[]>([]);
   const [sending, setSending] = useState(false);
   const [editing, setEditing] = useState<{ id: number; body: string } | null>(null);
@@ -115,6 +118,34 @@ export function ConversationView({
   const prependAnchor = useRef<number | null>(null);
 
   const title = info.kind === "dm" ? (otherMember?.name ?? "Mensaje directo") : `${info.name}`;
+  const mention = caret === null ? null : taskMentionQuery(body, caret);
+  const mentionKey = mention ? `${mention.start}:${mention.query}` : null;
+  const taskOptions = taskResults?.key === mentionKey ? taskResults.tasks : [];
+
+  useEffect(() => {
+    if (!mentionKey) return;
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      try {
+        const result = await searchChatTasksAction(mentionKey.slice(mentionKey.indexOf(":") + 1));
+        if (!cancelled) setTaskResults(result.ok ? { key: mentionKey, tasks: result.tasks } : { key: mentionKey, tasks: [], error: result.error });
+      } catch {
+        if (!cancelled) setTaskResults({ key: mentionKey, tasks: [], error: "No se pudieron buscar las tareas." });
+      }
+    }, 200);
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [mentionKey]);
+
+  function chooseTask(task: TaskMention) {
+    if (!mention) return;
+    const next = insertTaskMention(body, mention, task);
+    setBody(next.text);
+    setCaret(null);
+    requestAnimationFrame(() => {
+      textarea.current?.focus();
+      textarea.current?.setSelectionRange(next.caret, next.caret);
+    });
+  }
 
   const merge = useCallback((incoming: ChatMessage[]) => {
     if (incoming.length === 0) return;
@@ -224,6 +255,7 @@ export function ConversationView({
     stickToBottom.current = true;
     if (!sticker) {
       setBody("");
+      setCaret(null);
       setFiles([]);
     }
     let accepted = false;
@@ -536,11 +568,53 @@ export function ConversationView({
               ))}
             </div>
           )}
+          {mention && (
+            <div className="mx-2 mt-2 rounded-lg border bg-card p-1 shadow-sm">
+              <p className="px-2 py-1 text-xs font-semibold text-muted-foreground">Tareas pendientes · busca por número o título</p>
+              <div id="chat-task-options" role="listbox" aria-label="Tareas pendientes" className="max-h-56 overflow-y-auto">
+                {taskOptions.map((task, index) => (
+                  <button id={`chat-task-${task.id}`} key={task.id} type="button" role="option" aria-selected={index === taskIndex}
+                    onMouseDown={(e) => e.preventDefault()} onClick={() => chooseTask(task)}
+                    className={cn("flex w-full flex-col rounded-md px-2 py-1.5 text-left text-sm hover:bg-accent", index === taskIndex && "bg-accent")}>
+                    <span className="font-medium">#{task.id} {task.title}</span>
+                    <span className="text-xs text-muted-foreground">{task.projectName} · {task.status === "en_curso" ? "En curso" : task.status === "en_revision" ? "En revisión" : "Por hacer"}</span>
+                  </button>
+                ))}
+                {taskOptions.length === 0 && <p role="status" className="px-2 py-2 text-sm text-muted-foreground">{taskResults?.key !== mentionKey ? "Buscando tareas…" : taskResults?.error || "No hay tareas pendientes que coincidan."}</p>}
+              </div>
+              <p className="px-2 py-1 text-[11px] text-muted-foreground">↑ ↓ para elegir · Enter para insertar · Esc para cerrar</p>
+            </div>
+          )}
           <textarea
             ref={textarea}
             value={body}
-            onChange={(e) => setBody(e.target.value)}
+            aria-label="Mensaje"
+            role="combobox"
+            aria-autocomplete="list"
+            aria-haspopup="listbox"
+            aria-controls={mention ? "chat-task-options" : undefined}
+            aria-expanded={Boolean(mention)}
+            aria-activedescendant={mention && taskOptions[taskIndex] ? `chat-task-${taskOptions[taskIndex].id}` : undefined}
+            onChange={(e) => { setBody(e.target.value); setCaret(e.target.selectionStart); setTaskIndex(0); }}
+            onClick={(e) => { setCaret(e.currentTarget.selectionStart); setTaskIndex(0); }}
+            onKeyUp={(e) => {
+              if (["ArrowLeft", "ArrowRight", "Home", "End"].includes(e.key)) { setCaret(e.currentTarget.selectionStart); setTaskIndex(0); }
+            }}
             onKeyDown={(e) => {
+              if (e.nativeEvent.isComposing) return;
+              if (mention && !e.shiftKey) {
+                if (e.key === "Escape") { e.preventDefault(); setCaret(null); return; }
+                if ((e.key === "ArrowDown" || e.key === "ArrowUp") && taskOptions.length) {
+                  e.preventDefault();
+                  setTaskIndex((index) => (index + (e.key === "ArrowDown" ? 1 : taskOptions.length - 1)) % taskOptions.length);
+                  return;
+                }
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  if (taskOptions[taskIndex]) chooseTask(taskOptions[taskIndex]);
+                  return;
+                }
+              }
               if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
                 e.preventDefault();
                 void send();
@@ -592,7 +666,7 @@ export function ConversationView({
               <StickerPicker disabled={sending}
                 onSelect={(id) => void send({ body: stickerMessage(id), files: [] })}
                 onUpload={(file) => void send({ body: "", files: [file] })} />
-              <span className="hidden text-[11px] text-muted-foreground sm:inline">Enter envía · Shift+Enter nueva línea · **negrita** · @menciones</span>
+              <span className="hidden text-[11px] text-muted-foreground sm:inline">Enter envía · Shift+Enter nueva línea · **negrita** · @menciones · #tareas</span>
             </div>
             <Button size="sm" onClick={() => void send()} disabled={sending || (!body.trim() && files.length === 0)} className="bg-[#d9342c] text-white hover:bg-[#c42d26]">
               <Send className="size-3.5" />
@@ -676,4 +750,3 @@ export function ConversationView({
     </div>
   );
 }
-
