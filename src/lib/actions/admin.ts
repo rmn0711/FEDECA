@@ -90,7 +90,7 @@ export async function saveUserAction(_: FormState, formData: FormData): Promise<
         eyebrow: "Bienvenida",
         heading: `Hola ${name.split(" ")[0]}, ya tienes acceso a la Mesa de Ayuda`,
         intro:
-          "Desde la plataforma puedes registrar solicitudes de Diseño gráfico, IA, Cotizador, Redes sociales, Sistemas y Sinco Soft, y hacer seguimiento hasta su solución.",
+          "Desde la plataforma puedes registrar solicitudes de Diseño gráfico, IA, Cotizador, CRM, Redes sociales, Sistemas y Sinco Soft, y hacer seguimiento hasta su solución.",
         code: "Tu usuario",
         title: email,
         pills: [],

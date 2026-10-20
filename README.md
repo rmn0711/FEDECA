@@ -10,7 +10,10 @@ plataforma y por correo**. Las respuestas a esos correos también pueden volver 
 
 ## Categorías
 
-Cada categoría tiene un **responsable** (Administración → Categorías y responsables) y campos propios:
+Cada categoría tiene un **responsable** (Administración → Categorías y responsables) y campos propios.
+Responsables iniciales: **José Romano** (Sistemas, SINCO e IA), **Elías Saad** (CRM), **Mario Hernández**
+(Diseño gráfico) y **Claribel Marchena** (Redes sociales); Cotizador queda sin responsable hasta que se asigne.
+Se crean en el primer arranque con correos `inicial+apellido@acfcia.com` (`src/lib/db/team.ts`); ajústelos en Usuarios.
 
 | Categoría | Campos específicos |
 | --- | --- |
@@ -19,6 +22,7 @@ Cada categoría tiene un **responsable** (Administración → Categorías y resp
 | **Cotizador** | Tipo de solicitud, cliente, NIT, producto/proyecto, N.º de cotización, valor estimado, fecha límite, condiciones |
 | **Redes sociales** | Redes, tipo de publicación, objetivo, fecha y hora, presupuesto de pauta, material gráfico, copy |
 | **Sistemas** | Tipo, placa del equipo, sede, a quién afecta, ¿puede trabajar?, acceso remoto, mensaje de error |
+| **CRM** | Tipo, módulo, proyecto/campaña, contacto o negocio, usuario del CRM, fecha requerida, error/pasos |
 | **Sinco Soft** | Módulo, tipo, empresa/proyecto/obra, usuario SINCO, N.º de documento, mensaje de error, pasos |
 
 Los campos se definen en `src/lib/categories.ts`.

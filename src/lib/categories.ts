@@ -22,7 +22,7 @@ export interface CategoryDef {
   slug: string;
   name: string;
   description: string;
-  icon: "palette" | "sparkles" | "calculator" | "megaphone" | "monitor" | "database";
+  icon: "palette" | "sparkles" | "calculator" | "megaphone" | "monitor" | "database" | "contact";
   /** Clases de color para el ícono (paleta de marca ACF, igual que el cotizador) */
   accent: string;
   titlePlaceholder: string;
@@ -192,6 +192,52 @@ export const CATEGORIES: CategoryDef[] = [
         type: "textarea",
         wide: true,
         placeholder: "Descuentos, forma de pago, anticipos, vigencia…",
+      },
+    ],
+  },
+  {
+    slug: "crm",
+    name: "CRM",
+    description: "Contactos, pipeline de negocios, tareas, reportes, usuarios y automatizaciones del CRM.",
+    icon: "contact",
+    accent: "bg-[#0f8a8a]/10 text-[#0f8a8a] ring-[#0f8a8a]/15 dark:text-[#4fd3d3]",
+    titlePlaceholder: "Ej: Importar base de contactos de la feria inmobiliaria al pipeline",
+    descriptionPlaceholder:
+      "Explique qué necesita en el CRM, en qué contacto, negocio o pantalla ocurre y qué resultado espera.",
+    fields: [
+      {
+        key: "tipo",
+        label: "Tipo de solicitud",
+        type: "select",
+        required: true,
+        options: [
+          "Error / falla",
+          "Creación de usuario o permisos",
+          "Importar o depurar contactos",
+          "Pipeline / etapas de negocio",
+          "Reporte o tablero",
+          "Automatización / integración (WhatsApp, correo, formularios)",
+          "Capacitación",
+          "Mejora / nueva funcionalidad",
+        ],
+      },
+      {
+        key: "modulo",
+        label: "Módulo",
+        type: "select",
+        required: true,
+        options: ["Contactos", "Pipeline", "Tareas", "Reportes", "Conversaciones", "Otro"],
+      },
+      { key: "proyecto", label: "Proyecto / campaña", type: "text", placeholder: "Ej: Torres del Parque" },
+      { key: "registro", label: "Contacto o negocio afectado", type: "text", placeholder: "Nombre del contacto o del negocio" },
+      { key: "usuario_crm", label: "Usuario del CRM afectado", type: "text", placeholder: "Ej: asesor@acfcia.com" },
+      { key: "fecha_requerida", label: "Fecha requerida", type: "date" },
+      {
+        key: "mensaje_error",
+        label: "Mensaje de error / pasos para reproducir",
+        type: "textarea",
+        wide: true,
+        placeholder: "Texto exacto del error y los pasos que realizó",
       },
     ],
   },

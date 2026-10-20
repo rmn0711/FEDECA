@@ -6,6 +6,7 @@ import { sql } from "drizzle-orm";
 import * as schema from "./schema";
 import { SCHEMA_SQL } from "./migrate";
 import { CATEGORIES } from "@/lib/categories";
+import { seedDefaultTeam } from "./team";
 
 export type DB = PostgresJsDatabase<typeof schema>;
 
@@ -54,12 +55,15 @@ async function seed(db: DB) {
   }
 
   const [{ count }] = await db.select({ count: sql<number>`count(*)::int` }).from(schema.users);
-  if (count > 0) return;
+  if (count === 0) await createInitialUsers(db);
+  await seedDefaultTeam(db);
+}
 
-  const email = (process.env.ADMIN_EMAIL || "admin@acfcia.com").toLowerCase().trim();
+async function createInitialUsers(db: DB) {
+  const email = (process.env.ADMIN_EMAIL || "jromano@acfcia.com").toLowerCase().trim();
   const password = process.env.ADMIN_PASSWORD || "Admin123*";
   await db.insert(schema.users).values({
-    name: process.env.ADMIN_NAME || "Administrador Mesa de Ayuda",
+    name: process.env.ADMIN_NAME || "José Romano",
     email,
     passwordHash: await bcrypt.hash(password, 10),
     role: "admin",

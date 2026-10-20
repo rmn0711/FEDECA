@@ -1,4 +1,4 @@
-import { Calculator, Database, Megaphone, Monitor, Palette, Sparkles, type LucideIcon } from "lucide-react";
+import { Calculator, Contact, Database, Megaphone, Monitor, Palette, Sparkles, type LucideIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { STATUS_META, URGENCY_META, type Status, type Urgency } from "@/lib/constants";
 import { getCategory, type CategoryDef } from "@/lib/categories";
@@ -12,6 +12,7 @@ export const CATEGORY_ICONS: Record<CategoryDef["icon"], LucideIcon> = {
   megaphone: Megaphone,
   monitor: Monitor,
   database: Database,
+  contact: Contact,
 };
 
 export function StatusBadge({ status }: { status: Status }) {

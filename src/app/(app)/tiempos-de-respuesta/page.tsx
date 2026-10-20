@@ -16,7 +16,7 @@ export default function SlaPage() {
         <h1 className="text-2xl font-semibold tracking-tight">Prioridades y tiempos de respuesta</h1>
         <p className="text-sm text-muted-foreground">
           Acuerdos de nivel de servicio (ANS) de la mesa de ayuda. Aplican a todas las categorías: Diseño gráfico, IA, Cotizador,
-          Redes sociales, Sistemas y Sinco Soft.
+          Redes sociales, CRM, Sistemas y Sinco Soft.
         </p>
       </div>
 
