@@ -88,8 +88,8 @@ async function notifyAssignment(taskId: number, actorId: number) {
   const { html, text } = renderTicketEmail({
     preheader: `${actor?.name ?? "El líder"} te asignó una tarea en ${detail.projectName}`,
     eyebrow: "Espacio de equipo · tarea asignada",
-    heading: `${assignee.name.split(" ")[0]}, tienes una nueva tarea`,
-    intro: `${actor?.name ?? "Tu líder"} te asignó esta tarea en el proyecto ${detail.projectIcon} ${detail.projectName}.`,
+    heading: `${assignee.name.split(" ")[0]}, tienes una tarea nueva`,
+    intro: `${actor?.name.split(" ")[0] ?? "Tu líder"} te la asignó en ${detail.projectIcon} ${detail.projectName}.${t.dueDate ? ` La idea es tenerla para el ${formatShortDate(t.dueDate)}.` : ""} Cualquier duda, coméntala en la tarea.`,
     code: `Tarea #${t.id}`,
     title: t.title,
     pills: [

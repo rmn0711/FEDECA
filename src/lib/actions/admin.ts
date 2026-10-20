@@ -119,10 +119,10 @@ export async function saveUserAction(_: FormState, formData: FormData): Promise<
     } else if (formData.get("sendWelcome") === "on") {
       const { html, text } = renderTicketEmail({
         preheader: "Ya tienes acceso a Conecta ACF",
-        eyebrow: "Bienvenida",
-        heading: `Hola ${name.split(" ")[0]}, ya tienes acceso a Conecta ACF`,
+        eyebrow: "¡Bienvenido!",
+        heading: `${name.split(" ")[0]}, ya eres parte de Conecta ACF 🎉`,
         intro:
-          "Desde la plataforma puedes registrar solicitudes de Diseño gráfico, IA, Cotizador, CRM, Redes sociales, Sistemas y Sinco Soft, y hacer seguimiento hasta su solución.",
+          "Aquí pides lo que necesites a Diseño gráfico, IA, Cotizador, CRM, Redes sociales, Sistemas y Sinco Soft, y ves en todo momento cómo va tu solicitud.\n\nEntra con estos datos y cambia la contraseña temporal en Mi perfil.",
         code: "Tu usuario",
         title: email,
         pills: [],
@@ -163,13 +163,15 @@ export async function sendTestEmailAction(_: FormState, formData: FormData): Pro
   const to = String(formData.get("to") ?? admin.email).trim();
   const { html, text } = renderTicketEmail({
     preheader: "Correo de prueba de Conecta ACF",
-    eyebrow: "Prueba",
-    heading: "La configuración de correo funciona",
-    intro: "Si recibiste este mensaje, Conecta ACF puede enviar notificaciones.",
+    eyebrow: "Correo de prueba",
+    heading: "¡Funciona! El correo de Conecta ACF está listo ✅",
+    intro: "Si estás leyendo esto, Conecta ACF ya puede enviar avisos de solicitudes, respuestas, recordatorios y accesos.",
     code: "HD-00000",
     title: "Correo de prueba",
     pills: [{ label: "Prueba", color: "#ffffff", bg: "#19191b" }],
     details: [["Enviado por", admin.name]],
+    compact: true,
+    signoff: { name: admin.name, role: "Conecta ACF" },
     ctaLabel: "Abrir Conecta ACF",
     ctaUrl: appUrl("/dashboard"),
   });

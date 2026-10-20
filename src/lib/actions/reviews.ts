@@ -61,8 +61,8 @@ export async function submitReviewAction(formData: FormData): Promise<Result<{ i
       subject: `Para aprobar: ${task.title} (versión ${version})`,
       preheader: `${me.name} subió la versión ${version} para tu aprobación`,
       eyebrow: "Aprobación de piezas",
-      heading: `${me.name} necesita tu aprobación`,
-      intro: `Subió la versión ${version} de "${task.title}". Revísala, comenta sobre la imagen y apruébala o pide cambios.`,
+      heading: `${me.name.split(" ")[0]} te comparte una pieza para aprobar 🎨`,
+      intro: `Es la versión ${version} de "${task.title}". Échale un ojo: puedes comentar directo sobre la imagen y aprobarla o pedir ajustes.`,
       code: `Versión ${version}`,
       title: task.title,
       pills: [{ label: "Pendiente de aprobación", color: "#b84f22", bg: "#fdebe2" }],
@@ -137,10 +137,10 @@ export async function decideReviewAction(reviewId: number, decision: "aprobada" 
       subject: `${approved ? "Aprobada" : "Requiere cambios"}: ${detail.taskTitle} (versión ${detail.version})`,
       preheader: approved ? "Tu pieza fue aprobada" : "Tu pieza necesita cambios",
       eyebrow: "Aprobación de piezas",
-      heading: approved ? "¡Pieza aprobada!" : "La pieza necesita cambios",
+      heading: approved ? "¡Aprobada! Buen trabajo 🙌" : "Casi lista: hay algunos ajustes",
       intro: approved
-        ? `${me.name} aprobó la versión ${detail.version} de "${detail.taskTitle}". La tarea quedó como hecha.`
-        : `${me.name} pidió cambios en la versión ${detail.version} de "${detail.taskTitle}". Revisa los comentarios sobre la imagen y sube una nueva versión.`,
+        ? `${me.name.split(" ")[0]} aprobó la versión ${detail.version} de "${detail.taskTitle}" y la tarea quedó como hecha.`
+        : `${me.name.split(" ")[0]} revisó la versión ${detail.version} de "${detail.taskTitle}" y dejó comentarios sobre la imagen. Ajústala y sube la nueva versión cuando esté.`,
       code: `Versión ${detail.version}`,
       title: detail.taskTitle,
       pills: [approved ? { label: "Aprobada", color: "#0f8a5f", bg: "#dff5ec" } : { label: "Requiere cambios", color: "#b3261e", bg: "#fbe5e3" }],

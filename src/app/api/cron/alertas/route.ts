@@ -33,8 +33,8 @@ export async function GET(request: Request) {
     const { html, text } = renderTicketEmail({
       preheader: `${urgent.length} pendiente(s): ${overdue} vencido(s)`,
       eyebrow: "Resumen del día",
-      heading: `${person.name.split(" ")[0]}, tienes ${urgent.length} pendiente(s) para hoy`,
-      intro: `${overdue} vencido(s) y ${urgent.length - overdue} que vencen hoy entre solicitudes del helpdesk y tareas del equipo.`,
+      heading: `Buenos días, ${person.name.split(" ")[0]} ☀️`,
+      intro: `Para arrancar el día: tienes ${urgent.length} pendiente${urgent.length === 1 ? "" : "s"} que necesitan tu atención${overdue ? `, ${overdue} ya vencido${overdue === 1 ? "" : "s"}` : ""}. Empieza por los rojos.`,
       code: "Alertas",
       title: "Lo que requiere tu atención",
       pills: [
@@ -42,6 +42,7 @@ export async function GET(request: Request) {
         { label: `${urgent.length - overdue} para hoy`, color: "#b84f22", bg: "#fdebe2" },
       ],
       details: urgent.slice(0, 25).map((a) => [`${a.severity === "overdue" ? "🔴" : "🟠"} ${a.title}`, a.detail] as [string, string]),
+      listDetails: true,
       ctaLabel: "Abrir mi pipeline",
       ctaUrl: appUrl("/equipo/pipeline"),
     });

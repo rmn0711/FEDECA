@@ -115,14 +115,15 @@ export async function requestPasswordReset(_: FormState, formData: FormData): Pr
   });
   const url = appUrl(`/recuperar/confirmar?token=${token}`);
   const { html, text } = renderTicketEmail({
-    preheader: "Restablece tu contraseña de la mesa de ayuda",
-    eyebrow: "Seguridad",
-    heading: "Restablecer contraseña",
-    intro: `Hola ${user.name.split(" ")[0]}, recibimos una solicitud para cambiar tu contraseña. El enlace vence en 1 hora. Si no fuiste tú, ignora este correo.`,
+    preheader: "Crea una nueva contraseña para Conecta ACF",
+    eyebrow: "Cambio de contraseña",
+    heading: `${user.name.split(" ")[0]}, creemos una contraseña nueva`,
+    intro: "Nos pediste cambiar tu contraseña. Toca el botón y elige una nueva; el enlace dura 1 hora.\n\nSi no fuiste tú, ignora este correo: tu contraseña actual sigue igual.",
     code: "Cuenta",
     title: user.email,
     pills: [],
     details: [],
+    compact: true,
     ctaLabel: "Crear nueva contraseña",
     ctaUrl: url,
   });

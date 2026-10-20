@@ -81,13 +81,13 @@ export async function deliverDueReminders(ownerId?: number) {
     const { html, text } = renderTicketEmail({
       preheader: f.title,
       eyebrow: "Recordatorio de seguimiento",
-      heading: `${name.split(" ")[0]}, es hora de hacer este seguimiento`,
-      intro: `Lo programaste para ${f.remindAt ? formatDateTime(f.remindAt) : "ahora"}.`,
+      heading: `${name.split(" ")[0]}, te recuerdo este seguimiento ⏰`,
+      intro: `Me pediste avisarte${f.remindAt ? ` el ${formatDateTime(f.remindAt)}` : ""}. Cuando lo hagas, márcalo como hecho para que no vuelva a aparecer.`,
       code: f.ticketId ? ticketCode(f.ticketId) : "Seguimiento",
       title: f.title,
       pills: [{ label: "Pendiente", color: "#b84f22", bg: "#fdebe2" }],
       details: [],
-      message: f.notes ? { author: name, body: f.notes, label: "Notas" } : null,
+      message: f.notes ? { author: name, body: f.notes, label: "tus notas" } : null,
       ctaLabel: "Ver mis seguimientos",
       ctaUrl: appUrl("/equipo/seguimientos"),
     });

@@ -13,7 +13,7 @@ export function extractAddress(from: string) {
 export function stripQuotedReply(text: string) {
   const lines = text.replace(/\r\n/g, "\n").split("\n");
   const cutPatterns = [
-    /##- Escriba su respuesta/i,
+    /##- Escrib[ae] (su|tu) respuesta/i,
     /^-{2,}\s*(Original Message|Mensaje original)\s*-{2,}/i,
     /^_{5,}/,
     /^(De|From):\s.+/i,

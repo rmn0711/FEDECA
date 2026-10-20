@@ -71,13 +71,14 @@ export async function requestLoginLinkAction(_: FormState, formData: FormData): 
   const url = appUrl(`/entrar/${token}`);
   const { html, text } = renderTicketEmail({
     preheader: "Tu enlace para entrar a Conecta ACF",
-    eyebrow: "Acceso",
-    heading: "Entra a Conecta ACF",
-    intro: `Toca el botón para entrar sin contraseña y registrar o consultar tus solicitudes. El enlace sirve una sola vez y vence en ${LINK_MINUTES} minutos. Si no lo pediste, ignora este correo.`,
+    eyebrow: "Tu enlace para entrar",
+    heading: "¡Hola! Ya casi estás dentro 👋",
+    intro: `Toca el botón y entras directo, sin contraseña. Desde ahí registras tu solicitud, ves cómo va y respondes.\n\nEl enlace sirve una sola vez y dura ${LINK_MINUTES} minutos. Si no lo pediste tú, puedes ignorar este correo tranquilo.`,
     code: "Acceso",
     title: email,
     pills: [],
     details: [],
+    compact: true,
     ctaLabel: "Entrar a Conecta ACF",
     ctaUrl: url,
   });
