@@ -1,16 +1,18 @@
 import Link from "next/link";
 import { Plus } from "lucide-react";
-import { requireUser } from "@/lib/auth";
+import { isStaff, requireUser } from "@/lib/auth";
+import { unreadTotal } from "@/lib/chat/service";
 import { SessionProvider } from "@/components/shared/session-provider";
 import { AppSidebar, AppSidebarMobile } from "@/components/shared/app-sidebar";
 import { Button } from "@/components/ui/button";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await requireUser();
+  const unreadChat = isStaff(user) ? await unreadTotal(user).catch(() => 0) : 0;
 
   return (
     <SessionProvider
-      session={{ id: user.id, name: user.name, email: user.email, role: user.role, department: user.department }}
+      session={{ id: user.id, name: user.name, email: user.email, role: user.role, department: user.department, unreadChat }}
     >
       <div className="flex min-h-screen">
         <AppSidebar />

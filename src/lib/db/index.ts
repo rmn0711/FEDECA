@@ -8,6 +8,7 @@ import { SCHEMA_SQL } from "./migrate";
 import { CATEGORIES } from "@/lib/categories";
 import { seedDefaultTeam } from "./team";
 import { seedWorkspace } from "./workspace-seed";
+import { seedChat } from "./chat-seed";
 
 export type DB = PostgresJsDatabase<typeof schema>;
 
@@ -59,6 +60,7 @@ async function seed(db: DB) {
   if (count === 0) await createInitialUsers(db);
   await seedDefaultTeam(db);
   await seedWorkspace(db);
+  await seedChat(db);
 }
 
 async function createInitialUsers(db: DB) {

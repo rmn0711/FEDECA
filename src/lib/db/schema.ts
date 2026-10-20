@@ -1,4 +1,4 @@
-import { boolean, customType, doublePrecision, integer, jsonb, pgTable, serial, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { boolean, customType, doublePrecision, integer, jsonb, pgTable, primaryKey, serial, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import type { Role, Status, Urgency } from "@/lib/constants";
 import type { ChecklistItem, TaskStatus } from "@/lib/workspace/constants";
 
@@ -181,6 +181,75 @@ export const pages = pgTable("hd_pages", {
 export type Project = typeof projects.$inferSelect;
 export type Task = typeof tasks.$inferSelect;
 export type Page = typeof pages.$inferSelect;
+
+// ── Chat del equipo ──
+
+export const conversations = pgTable("hd_conversations", {
+  id: serial("id").primaryKey(),
+  kind: text("kind").$type<"channel" | "dm">().notNull(),
+  name: text("name"),
+  description: text("description"),
+  isPrivate: boolean("is_private").notNull().default(false),
+  /** Para mensajes directos: "idMenor:idMayor" (evita duplicados) */
+  dmKey: text("dm_key").unique(),
+  createdBy: integer("created_by").references(() => users.id, { onDelete: "set null" }),
+  createdAt: ts("created_at").notNull().defaultNow(),
+  lastMessageAt: ts("last_message_at").notNull().defaultNow(),
+});
+
+export const conversationMembers = pgTable(
+  "hd_conversation_members",
+  {
+    conversationId: integer("conversation_id")
+      .notNull()
+      .references(() => conversations.id, { onDelete: "cascade" }),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    lastReadAt: ts("last_read_at").notNull().defaultNow(),
+    joinedAt: ts("joined_at").notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.conversationId, t.userId] })]
+);
+
+export const messages = pgTable("hd_messages", {
+  id: serial("id").primaryKey(),
+  conversationId: integer("conversation_id")
+    .notNull()
+    .references(() => conversations.id, { onDelete: "cascade" }),
+  authorId: integer("author_id").references(() => users.id, { onDelete: "set null" }),
+  body: text("body").notNull().default(""),
+  editedAt: ts("edited_at"),
+  deletedAt: ts("deleted_at"),
+  createdAt: ts("created_at").notNull().defaultNow(),
+  /** Cambia con cada edición o reacción: el chat consulta "lo que cambió desde…" */
+  updatedAt: ts("updated_at").notNull().defaultNow(),
+});
+
+export const messageReactions = pgTable(
+  "hd_message_reactions",
+  {
+    messageId: integer("message_id")
+      .notNull()
+      .references(() => messages.id, { onDelete: "cascade" }),
+    userId: integer("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    emoji: text("emoji").notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.messageId, t.userId, t.emoji] })]
+);
+
+export const messageFiles = pgTable("hd_message_files", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  messageId: integer("message_id")
+    .notNull()
+    .references(() => messages.id, { onDelete: "cascade" }),
+  filename: text("filename").notNull(),
+  mime: text("mime").notNull(),
+  size: integer("size").notNull(),
+  data: bytea("data").notNull(),
+});
 
 export type User = typeof users.$inferSelect;
 export type Ticket = typeof tickets.$inferSelect;

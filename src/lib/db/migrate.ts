@@ -150,4 +150,51 @@ export const SCHEMA_SQL = [
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
   )`,
   `CREATE INDEX IF NOT EXISTS hd_pages_parent_idx ON hd_pages(parent_id)`,
+  // ── Chat del equipo (canales y mensajes directos) ──
+  `CREATE TABLE IF NOT EXISTS hd_conversations (
+    id SERIAL PRIMARY KEY,
+    kind TEXT NOT NULL CHECK (kind IN ('channel','dm')),
+    name TEXT,
+    description TEXT,
+    is_private BOOLEAN NOT NULL DEFAULT FALSE,
+    dm_key TEXT UNIQUE,
+    created_by INTEGER REFERENCES hd_users(id) ON DELETE SET NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    last_message_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`,
+  `CREATE TABLE IF NOT EXISTS hd_conversation_members (
+    conversation_id INTEGER NOT NULL REFERENCES hd_conversations(id) ON DELETE CASCADE,
+    user_id INTEGER NOT NULL REFERENCES hd_users(id) ON DELETE CASCADE,
+    last_read_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    joined_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    PRIMARY KEY (conversation_id, user_id)
+  )`,
+  `CREATE INDEX IF NOT EXISTS hd_conversation_members_user_idx ON hd_conversation_members(user_id)`,
+  `CREATE TABLE IF NOT EXISTS hd_messages (
+    id SERIAL PRIMARY KEY,
+    conversation_id INTEGER NOT NULL REFERENCES hd_conversations(id) ON DELETE CASCADE,
+    author_id INTEGER REFERENCES hd_users(id) ON DELETE SET NULL,
+    body TEXT NOT NULL DEFAULT '',
+    edited_at TIMESTAMPTZ,
+    deleted_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`,
+  `CREATE INDEX IF NOT EXISTS hd_messages_conv_idx ON hd_messages(conversation_id, id)`,
+  `CREATE INDEX IF NOT EXISTS hd_messages_updated_idx ON hd_messages(conversation_id, updated_at)`,
+  `CREATE TABLE IF NOT EXISTS hd_message_reactions (
+    message_id INTEGER NOT NULL REFERENCES hd_messages(id) ON DELETE CASCADE,
+    user_id INTEGER NOT NULL REFERENCES hd_users(id) ON DELETE CASCADE,
+    emoji TEXT NOT NULL,
+    PRIMARY KEY (message_id, user_id, emoji)
+  )`,
+  `CREATE TABLE IF NOT EXISTS hd_message_files (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    message_id INTEGER NOT NULL REFERENCES hd_messages(id) ON DELETE CASCADE,
+    filename TEXT NOT NULL,
+    mime TEXT NOT NULL,
+    size INTEGER NOT NULL,
+    data BYTEA NOT NULL
+  )`,
+  `CREATE INDEX IF NOT EXISTS hd_message_files_msg_idx ON hd_message_files(message_id)`,
 ];

@@ -8,6 +8,7 @@ import {
   CalendarDays,
   FolderKanban,
   ListTodo,
+  MessagesSquare,
   NotebookText,
   Users2,
   LayoutDashboard,
@@ -27,6 +28,7 @@ import {
 import { cn } from "@/lib/utils";
 import { ROLE_LABELS } from "@/lib/constants";
 import { logout } from "@/lib/actions/auth";
+import { unreadCountAction } from "@/lib/actions/chat";
 import { Button } from "@/components/ui/button";
 import { UserAvatar } from "@/components/shared/user-avatar";
 import { useSession } from "@/components/shared/session-provider";
@@ -34,7 +36,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
-type NavLink = { href: string; label: string; icon: LucideIcon };
+type NavLink = { href: string; label: string; icon: LucideIcon; badge?: number };
 type NavGroup = { label: string; links: NavLink[] };
 
 // Igual que en el cotizador: el colapso es una preferencia de este navegador.
@@ -57,6 +59,7 @@ function buildGroups({ isAdmin, isStaff }: { isAdmin: boolean; isStaff: boolean 
       label: "Equipo",
       links: [
         { href: "/equipo", label: "Espacio de equipo", icon: Users2 },
+        { href: "/chat", label: "Chat", icon: MessagesSquare },
         { href: "/equipo/mis-tareas", label: "Mis tareas", icon: ListTodo },
         { href: "/equipo/calendario", label: "Calendario", icon: CalendarDays },
         { href: "/equipo/paginas", label: "Páginas", icon: NotebookText },
@@ -80,6 +83,20 @@ function buildGroups({ isAdmin, isStaff }: { isAdmin: boolean; isStaff: boolean 
 // Estilo "glass" del cotizador: panel flotante de vidrio oscuro con destellos de marca; el activo va en rojo ACF.
 const GLASS_LINEA = "h-px bg-gradient-to-r from-transparent via-white/25 to-transparent";
 
+/** No leídos del chat: valor inicial del servidor y consulta cada 15 s. */
+function useUnreadChat(initial: number, enabled: boolean) {
+  const [count, setCount] = useState(initial);
+  useEffect(() => {
+    if (!enabled) return;
+    const tick = () => {
+      if (document.visibilityState === "visible") unreadCountAction().then(setCount).catch(() => {});
+    };
+    const t = setInterval(tick, 15_000);
+    return () => clearInterval(t);
+  }, [enabled]);
+  return count;
+}
+
 function NavItem({ link, active, collapsed, onNavigate }: { link: NavLink; active: boolean; collapsed: boolean; onNavigate?: () => void }) {
   const Icon = link.icon;
   const item = (
@@ -87,7 +104,7 @@ function NavItem({ link, active, collapsed, onNavigate }: { link: NavLink; activ
       href={link.href}
       onClick={onNavigate}
       className={cn(
-        "group flex items-center gap-3 rounded-xl px-2 py-1.5 text-sm font-medium transition-all",
+        "group relative flex items-center gap-3 rounded-xl px-2 py-1.5 text-sm font-medium transition-all",
         collapsed && "justify-center px-0",
         active ? "bg-[#d9342c] text-white shadow-[0_6px_20px_rgba(217,52,44,0.45)]" : "text-white/70 hover:bg-white/10 hover:text-white"
       )}
@@ -100,7 +117,18 @@ function NavItem({ link, active, collapsed, onNavigate }: { link: NavLink; activ
       >
         <Icon className="size-4" />
       </span>
-      {!collapsed && <span className="truncate">{link.label}</span>}
+      {!collapsed && <span className="min-w-0 flex-1 truncate">{link.label}</span>}
+      {!!link.badge && (
+        <span
+          className={cn(
+            "rounded-full px-1.5 text-[11px] font-semibold",
+            active ? "bg-white text-[#d9342c]" : "bg-[#d9342c] text-white",
+            collapsed && "absolute top-0.5 right-1.5"
+          )}
+        >
+          {link.badge > 99 ? "99+" : link.badge}
+        </span>
+      )}
     </Link>
   );
   if (!collapsed) return item;
@@ -124,7 +152,11 @@ function SidebarContent({
   const pathname = usePathname();
   const { session, isAdmin, isStaff } = useSession();
   const [, startLogoutTransition] = useTransition();
-  const groups = buildGroups({ isAdmin, isStaff });
+  const unread = useUnreadChat(session.unreadChat, isStaff);
+  const groups = buildGroups({ isAdmin, isStaff }).map((g) => ({
+    ...g,
+    links: g.links.map((l) => (l.href === "/chat" ? { ...l, badge: unread } : l)),
+  }));
   const allHrefs = groups.flatMap((g) => g.links.map((l) => l.href));
   // El enlace activo es el más específico que coincide (así "Nueva solicitud" no marca también "Solicitudes").
   const activeHref = allHrefs

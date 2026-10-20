@@ -3,7 +3,7 @@
 import { createContext, useContext } from "react";
 import type { Role } from "@/lib/constants";
 
-export type ClientSession = { id: number; name: string; email: string; role: Role; department: string | null };
+export type ClientSession = { id: number; name: string; email: string; role: Role; department: string | null; unreadChat: number };
 
 const SessionContext = createContext<ClientSession | null>(null);
 

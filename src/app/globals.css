@@ -263,3 +263,20 @@ html {
   background: var(--muted);
   font-weight: 600;
 }
+
+/* Mensajes del chat: mismo formato, más compacto. */
+.md-chat {
+  line-height: 1.55;
+  font-size: 0.875rem;
+}
+.md-chat > * + * {
+  margin-top: 0.35em;
+}
+.md-chat h1,
+.md-chat h2,
+.md-chat h3 {
+  font-size: 1rem;
+  margin-top: 0.4em;
+  border: 0;
+  padding: 0;
+}
