@@ -95,6 +95,66 @@ Botón **Alertas** en la barra superior (mismo panel del cotizador), actualizado
 - **Resumen diario por correo** (lunes a viernes, 7:00 a. m.) con lo vencido y lo que vence hoy: `vercel.json` +
   variable `CRON_SECRET`.
 
+## Acceso de clientes internos (enlace + contraseña)
+
+Cada persona tiene un **enlace personal** (`/acceso/…`). Lo abre, ve "Hola, Nombre" y solo escribe su contraseña
+(la primera vez la crea). Desde ahí radica solicitudes, las consulta y responde. En **Usuarios** el administrador
+copia o envía el enlace por correo, lo regenera si se filtra, o lo envía a todos los solicitantes que aún no han
+entrado. El navegador recuerda a la persona: los enlaces de los correos también piden solo la contraseña. Tras 8
+intentos fallidos en 15 minutos el acceso se bloquea temporalmente.
+
+## Seguimientos
+
+**Equipo → Seguimientos** (o el botón **Seguimiento** de la barra superior): escribe en lenguaje natural, por ejemplo
+"Revisar con Elías el informe de pauta el jueves a las 3pm". Se detectan la fecha, la hora y la persona. Se guarda como
+**recordatorio para ti** o como **tarea asignada** en un proyecto (con un recordatorio para revisarla ese día). A la
+hora indicada llega el aviso por la plataforma, al celular y por correo. Se puede posponer (1 hora, mañana, lunes) y
+crear desde una solicitud ("Recordarme hacer seguimiento"). El cron `/api/cron/recordatorios` corre cada 15 minutos
+(requiere plan Pro de Vercel); con la plataforma abierta los avisos llegan igual al minuto.
+
+## Base de conocimiento
+
+**Base de conocimiento** (para todos): guías con búsqueda, por categoría y con calificación "¿te sirvió?". El equipo
+crea y edita artículos (con borradores). Al radicar una solicitud se sugieren artículos según lo que la persona
+escribe; si el artículo resuelve el problema, se cuenta como **solicitud evitada**. Incluye 8 artículos de arranque
+que conviene ajustar a los procedimientos reales.
+
+## Plantillas, tareas recurrentes y aprobación de piezas
+
+- **Usar plantilla** en un proyecto crea todas las tareas de un *Lanzamiento de proyecto*, una *Campaña de pauta*, un
+  *Evento / feria* o un *Mes de contenido*, con fechas relativas a la fecha clave y el responsable de cada área.
+- **Repetir** en una tarea (cada día hábil, semana, 2 semanas o mes): al completarla se crea la siguiente.
+- **Aprobación de piezas**: en el detalle de la tarea se sube una versión (imagen, PDF o MP4). Quien aprueba (el líder
+  o quien creó la tarea) comenta **marcando puntos sobre la imagen** y la **aprueba** (la tarea queda Hecha) o
+  **pide cambios** (vuelve a En curso). Se guarda el historial de versiones y se notifica por correo y push.
+
+## Notificaciones en el celular
+
+En **Mi perfil → Notificaciones** cada persona las activa en su dispositivo. Avisan de mensajes directos y
+menciones, solicitudes nuevas o respondidas, asignaciones, piezas para aprobar y recordatorios. Requiere claves VAPID
+(`npm run push:keys` → `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`). En iPhone hay que agregar la plataforma a la
+pantalla de inicio (Compartir → "Agregar a pantalla de inicio").
+
+## Informes de gestión
+
+**Configuración → Informes de gestión** (administrador), por mes: recibidas, resueltas, cumplimiento de primera
+respuesta y de solución, tiempo promedio y satisfacción; por responsable (incluye tareas hechas) y por categoría;
+temas más frecuentes; áreas que más solicitan; tendencia de 6 meses y artículos que más evitaron solicitudes.
+Exporta a **Excel** (5 hojas, con el detalle de las solicitudes) y a **PDF** (imprimir).
+
+## Tablero de marketing y demanda
+
+**Equipo → Tablero de marketing**: inversión, leads, CPL, % de calificados, visitas a sala, separaciones, costo por
+separación y conversión, con comparación contra el periodo anterior, embudo, leads y separaciones por canal, tendencia
+y tabla por proyecto. Los datos (mes × proyecto × canal) se cargan en **Cargar datos**, pegando desde Excel o
+automáticamente por API desde el CRM o el cotizador: `POST /api/marketing/metricas` con
+`Authorization: Bearer MARKETING_API_KEY`.
+
+## Auditoría
+
+**Configuración → Auditoría**: ingresos y intentos fallidos, cambios de usuarios, roles y permisos, categorías,
+configuración, proyectos, canales, plantillas, aprobaciones, métricas y exportaciones, con fecha, persona e IP.
+
 ## Roles
 
 - **Solicitante**: crea solicitudes y ve solo las suyas.

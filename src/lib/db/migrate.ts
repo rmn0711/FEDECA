@@ -290,4 +290,23 @@ export const SCHEMA_SQL = [
   )`,
   `CREATE INDEX IF NOT EXISTS hd_followups_owner_idx ON hd_followups(owner_id, status)`,
   `CREATE INDEX IF NOT EXISTS hd_followups_due_idx ON hd_followups(remind_at) WHERE status = 'pendiente'`,
+  // ── Métricas de marketing y generación de demanda ──
+  `CREATE TABLE IF NOT EXISTS hd_marketing_metrics (
+    id SERIAL PRIMARY KEY,
+    month TEXT NOT NULL,
+    project TEXT NOT NULL,
+    channel TEXT NOT NULL,
+    spend BIGINT NOT NULL DEFAULT 0,
+    impressions INTEGER NOT NULL DEFAULT 0,
+    clicks INTEGER NOT NULL DEFAULT 0,
+    leads INTEGER NOT NULL DEFAULT 0,
+    qualified INTEGER NOT NULL DEFAULT 0,
+    visits INTEGER NOT NULL DEFAULT 0,
+    quotes INTEGER NOT NULL DEFAULT 0,
+    sales INTEGER NOT NULL DEFAULT 0,
+    source TEXT NOT NULL DEFAULT 'manual',
+    updated_by INTEGER REFERENCES hd_users(id) ON DELETE SET NULL,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE (month, project, channel)
+  )`,
 ];

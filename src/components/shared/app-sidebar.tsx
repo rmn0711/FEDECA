@@ -8,6 +8,7 @@ import {
   BellPlus,
   BookOpen,
   CalendarDays,
+  FileBarChart,
   FolderKanban,
   ListTodo,
   MessagesSquare,
@@ -24,6 +25,7 @@ import {
   ShieldCheck,
   Tags,
   Timer,
+  TrendingUp,
   UserRound,
   Users,
   type LucideIcon,
@@ -63,6 +65,7 @@ function buildGroups({ isAdmin, isStaff }: { isAdmin: boolean; isStaff: boolean 
       label: "Equipo",
       links: [
         { href: "/equipo", label: "Espacio de equipo", icon: Users2 },
+        { href: "/equipo/marketing", label: "Tablero de marketing", icon: TrendingUp },
         { href: "/chat", label: "Chat", icon: MessagesSquare },
         { href: "/equipo/pipeline", label: "Mi pipeline", icon: ListTodo },
         { href: "/equipo/seguimientos", label: "Seguimientos", icon: BellPlus },
@@ -75,6 +78,7 @@ function buildGroups({ isAdmin, isStaff }: { isAdmin: boolean; isStaff: boolean 
     groups.push({
       label: "Configuración",
       links: [
+        { href: "/admin/informes", label: "Informes de gestión", icon: FileBarChart },
         { href: "/admin/categorias", label: "Categorías y responsables", icon: Tags },
         { href: "/admin/usuarios", label: "Usuarios", icon: Users },
         { href: "/admin/correos", label: "Registro de correos", icon: Mail },

@@ -280,3 +280,27 @@ html {
   border: 0;
   padding: 0;
 }
+
+/* Impresión / PDF de informes: solo el contenido, sin menú ni barra superior. */
+@media print {
+  aside,
+  header,
+  .no-print,
+  [data-sonner-toaster] {
+    display: none !important;
+  }
+  main {
+    padding: 0 !important;
+  }
+  body {
+    background: #fff !important;
+  }
+  [data-slot="card"] {
+    break-inside: avoid;
+    box-shadow: none !important;
+  }
+  @page {
+    size: A4;
+    margin: 14mm;
+  }
+}

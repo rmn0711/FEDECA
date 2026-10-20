@@ -1,4 +1,4 @@
-import { boolean, customType, doublePrecision, integer, jsonb, pgTable, primaryKey, real, serial, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { bigint, boolean, customType, doublePrecision, integer, jsonb, pgTable, primaryKey, real, serial, text, timestamp, unique, uuid } from "drizzle-orm/pg-core";
 import type { Role, Status, Urgency } from "@/lib/constants";
 import type { ChecklistItem, Recurrence, TaskStatus } from "@/lib/workspace/constants";
 
@@ -347,6 +347,31 @@ export const followups = pgTable("hd_followups", {
   doneAt: ts("done_at"),
   createdAt: ts("created_at").notNull().defaultNow(),
 });
+
+export const marketingMetrics = pgTable(
+  "hd_marketing_metrics",
+  {
+    id: serial("id").primaryKey(),
+    /** AAAA-MM */
+    month: text("month").notNull(),
+    /** Proyecto inmobiliario o campaña */
+    project: text("project").notNull(),
+    channel: text("channel").notNull(),
+    spend: bigint("spend", { mode: "number" }).notNull().default(0),
+    impressions: integer("impressions").notNull().default(0),
+    clicks: integer("clicks").notNull().default(0),
+    leads: integer("leads").notNull().default(0),
+    qualified: integer("qualified").notNull().default(0),
+    visits: integer("visits").notNull().default(0),
+    quotes: integer("quotes").notNull().default(0),
+    sales: integer("sales").notNull().default(0),
+    /** manual | csv | api */
+    source: text("source").notNull().default("manual"),
+    updatedBy: integer("updated_by").references(() => users.id, { onDelete: "set null" }),
+    updatedAt: ts("updated_at").notNull().defaultNow(),
+  },
+  (t) => [unique().on(t.month, t.project, t.channel)]
+);
 
 export type User = typeof users.$inferSelect;
 export type Ticket = typeof tickets.$inferSelect;
