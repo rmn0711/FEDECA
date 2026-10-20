@@ -1,0 +1,42 @@
+import Link from "next/link";
+import { Plus } from "lucide-react";
+import { requireUser } from "@/lib/auth";
+import { SessionProvider } from "@/components/shared/session-provider";
+import { AppSidebar, AppSidebarMobile } from "@/components/shared/app-sidebar";
+import { Button } from "@/components/ui/button";
+
+export default async function AppLayout({ children }: { children: React.ReactNode }) {
+  const user = await requireUser();
+
+  return (
+    <SessionProvider
+      session={{ id: user.id, name: user.name, email: user.email, role: user.role, department: user.department }}
+    >
+      <div className="flex min-h-screen">
+        <AppSidebar />
+        <div className="flex min-w-0 flex-1 flex-col">
+          {/* Barra superior "glass" del cotizador. */}
+          <header className="sticky top-3 z-20 mx-3 mt-3 flex h-14 items-center gap-2 rounded-2xl border border-white/10 bg-[#19191b]/90 px-3 text-white shadow-[0_10px_40px_rgba(0,0,0,0.35)] backdrop-blur-2xl md:mx-6 md:px-4">
+            <AppSidebarMobile />
+            <p className="text-sm font-semibold tracking-wide text-white/90">
+              Mesa de Ayuda <span className="text-[#ff5a50]">ACF</span>
+            </p>
+            <div className="ml-auto flex items-center gap-2">
+              <Button
+                size="sm"
+                className="bg-[#d9342c] text-white shadow-[0_6px_20px_rgba(217,52,44,0.45)] hover:bg-[#c42d26]"
+                render={
+                  <Link href="/solicitudes/nueva">
+                    <Plus className="size-4" />
+                    <span className="hidden sm:inline">Nueva solicitud</span>
+                  </Link>
+                }
+              />
+            </div>
+          </header>
+          <main className="min-w-0 flex-1 px-4 py-6 md:px-6 md:py-8">{children}</main>
+        </div>
+      </div>
+    </SessionProvider>
+  );
+}
