@@ -2,6 +2,8 @@ import Link from "next/link";
 import { Plus } from "lucide-react";
 import { isStaff, requireUser } from "@/lib/auth";
 import { unreadTotal } from "@/lib/chat/service";
+import { getAlerts } from "@/lib/alerts";
+import { AlertsButton } from "@/components/shared/alerts-button";
 import { SessionProvider } from "@/components/shared/session-provider";
 import { AppSidebar, AppSidebarMobile } from "@/components/shared/app-sidebar";
 import { Button } from "@/components/ui/button";
@@ -9,6 +11,11 @@ import { Button } from "@/components/ui/button";
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await requireUser();
   const unreadChat = isStaff(user) ? await unreadTotal(user).catch(() => 0) : 0;
+  // Si las alertas fallan, la barra superior no debe tumbar toda la app (igual que en el cotizador).
+  const alerts = await getAlerts(user).catch((error) => {
+    console.error("No se pudieron cargar las alertas:", error);
+    return { alerts: [], total: 0, overdue: 0 };
+  });
 
   return (
     <SessionProvider
@@ -24,6 +31,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               Mesa de Ayuda <span className="text-[#ff5a50]">ACF</span>
             </p>
             <div className="ml-auto flex items-center gap-2">
+              <AlertsButton initial={alerts} className="border-white/20 bg-white/10 text-white hover:bg-white/20 hover:text-white" />
               <Button
                 size="sm"
                 className="bg-[#d9342c] text-white shadow-[0_6px_20px_rgba(217,52,44,0.45)] hover:bg-[#c42d26]"

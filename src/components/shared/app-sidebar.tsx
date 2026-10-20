@@ -60,7 +60,7 @@ function buildGroups({ isAdmin, isStaff }: { isAdmin: boolean; isStaff: boolean 
       links: [
         { href: "/equipo", label: "Espacio de equipo", icon: Users2 },
         { href: "/chat", label: "Chat", icon: MessagesSquare },
-        { href: "/equipo/mis-tareas", label: "Mis tareas", icon: ListTodo },
+        { href: "/equipo/pipeline", label: "Mi pipeline", icon: ListTodo },
         { href: "/equipo/calendario", label: "Calendario", icon: CalendarDays },
         { href: "/equipo/paginas", label: "Páginas", icon: NotebookText },
       ],

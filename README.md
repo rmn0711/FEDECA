@@ -61,6 +61,40 @@ Estados: **Abierto → En progreso → En espera → Resuelto → Cerrado**.
 - Para marcar *Resuelta* hay que describir la solución; el solicitante la califica y queda *Cerrada*.
 - Todos los correos quedan en **Administración → Registro de correos** con vista previa.
 
+## Espacio de equipo (marketing digital y generación de demanda)
+
+Solo para el líder y los responsables (los solicitantes no lo ven). Menú **Equipo**:
+
+- **Espacio de equipo**: proyectos con avance, entregas de los próximos 7 días, carga por persona y páginas recientes.
+  Arranca con *Marketing digital* y *Generación de demanda*.
+- **Proyectos** con vista **Tablero** (arrastrar y soltar), **Lista** y **Calendario**. Cada tarea tiene responsable
+  (se le avisa por correo), prioridad, fechas, canales (Instagram, Meta Ads, CRM…), checklist, descripción con formato
+  y comentarios. Una solicitud del helpdesk se puede **convertir en tarea** desde su detalle.
+- **Mi pipeline**: en un solo tablero, las **solicitudes del helpdesk por resolver** de cada persona (asignadas o sin
+  asignar de sus categorías; se arrastran entre Abierto, En progreso y En espera) y sus tareas del equipo. El líder
+  puede ver el pipeline de cada integrante.
+- **Calendario**: calendario de contenidos y entregas de todos los proyectos.
+- **Páginas** tipo Notion: subpáginas, ícono, títulos, listas de tareas que se marcan con un clic, tablas, citas y
+  guardado automático. Incluye plantillas: *Cómo trabajamos*, *Plan de marketing digital*, *Calendario editorial*,
+  *Embudo de generación de demanda* y *Fuentes de leads*.
+
+## Chat del equipo (tipo Slack)
+
+- **Canales** públicos (todo el equipo) y **privados/grupos** (solo quienes se elijan), y **mensajes directos** 1 a 1.
+- Formato, @menciones, emojis, reacciones, edición y borrado, archivos e imágenes (también pegando o arrastrando).
+- Se actualiza solo cada 3 segundos; el menú muestra los mensajes sin leer.
+- Canales iniciales: `#general`, `#marketing-digital` y `#generacion-de-demanda`.
+
+## Alertas
+
+Botón **Alertas** en la barra superior (mismo panel del cotizador), actualizado cada minuto:
+
+- Solicitudes a tu cargo: solución vencida, sin primera respuesta a tiempo, por vencer, el solicitante respondió y nuevas.
+- Tareas vencidas o que vencen hoy; para el líder, tareas en revisión, solicitudes vencidas de otros y sin responsable.
+- Mensajes del chat sin leer, y en tus propias solicitudes: las que esperan tu respuesta o tu calificación.
+- **Resumen diario por correo** (lunes a viernes, 7:00 a. m.) con lo vencido y lo que vence hoy: `vercel.json` +
+  variable `CRON_SECRET`.
+
 ## Roles
 
 - **Solicitante**: crea solicitudes y ve solo las suyas.

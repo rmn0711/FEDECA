@@ -39,6 +39,8 @@ const KIND_LABELS: Record<string, string> = {
   password: "Contraseña",
   welcome: "Bienvenida",
   test: "Prueba",
+  task: "Tarea asignada",
+  digest: "Resumen diario",
 };
 
 const initialState: FormState = { error: null };

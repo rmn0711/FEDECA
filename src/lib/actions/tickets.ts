@@ -111,3 +111,12 @@ export async function rateAction(_: FormState, formData: FormData): Promise<Form
     id
   );
 }
+
+/** Cambio rápido de estado desde el pipeline (arrastrar): solo entre estados abiertos, sin comentario. */
+export async function quickTicketStatusAction(ticketId: number, status: string): Promise<FormState> {
+  const user = await requireUser();
+  if (!["abierto", "en_progreso", "en_espera"].includes(status)) {
+    return { error: "Para resolver o cerrar, abre la solicitud y describe la solución." };
+  }
+  return run(() => changeStatus(user, ticketId, status, null), "Estado actualizado y notificado por correo.", ticketId);
+}

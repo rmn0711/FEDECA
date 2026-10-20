@@ -54,7 +54,7 @@ export default async function TeamHome() {
       </Card>
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <StatTile label="Mis tareas abiertas" value={String(myOpen.length)} hint="Asignadas a ti" icon={ListTodo} accent="blue" />
+        <Link href="/equipo/pipeline" className="block"><StatTile label="Mis tareas abiertas" value={String(myOpen.length)} hint="Ver mi pipeline" icon={ListTodo} accent="blue" /></Link>
         <StatTile label="Vencidas del equipo" value={String(overdueTeam)} hint="Pasaron su fecha de entrega" icon={AlarmClock} accent="orange" />
         <StatTile label="En revisión" value={String(reviewTeam)} hint="Esperan aprobación" icon={CheckCircle2} accent="violet" />
         <StatTile label="Entregas en 7 días" value={String(upcoming.length)} hint="Todo el equipo" icon={CalendarDays} accent="aqua" />
