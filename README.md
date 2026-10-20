@@ -103,6 +103,20 @@ copia o envía el enlace por correo, lo regenera si se filtra, o lo envía a tod
 entrado. El navegador recuerda a la persona: los enlaces de los correos también piden solo la contraseña. Tras 8
 intentos fallidos en 15 minutos el acceso se bloquea temporalmente.
 
+## Enlace general para solicitudes (sin contraseña)
+
+`/solicitar` es un enlace único para compartir con toda la empresa (Administración → Configuración tiene el botón
+«Copiar enlace»). La persona escribe su correo de ACF y recibe un botón para entrar **sin contraseña ni registro**;
+la primera vez solo indica su nombre y área. Luego radica, consulta y responde sus solicitudes. Si ya entró en ese
+navegador, el enlace la lleva directo al formulario.
+
+- Se entra con un enlace al correo (y no solo escribiendo el correo) para que nadie pueda ver las solicitudes de otra
+  persona escribiendo su dirección.
+- Cada enlace sirve una vez y vence en 30 minutos; se guarda solo su huella (hash). Se usa con un botón y no al abrir
+  la página, porque Outlook/Defender abren los enlaces de los correos y los gastarían.
+- Pueden entrar cuentas existentes y, sin cuenta, solo correos de `PUBLIC_REQUEST_DOMAINS` (por defecto `acfcia.com`).
+- Límites: 3 enlaces cada 15 minutos por correo y 20 por hora desde la misma conexión.
+
 ## Seguimientos
 
 **Equipo → Seguimientos** (o el botón **Seguimiento** de la barra superior): escribe en lenguaje natural, por ejemplo

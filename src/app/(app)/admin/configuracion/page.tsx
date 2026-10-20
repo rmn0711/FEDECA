@@ -3,6 +3,7 @@ import { getSetting } from "@/lib/tickets/queries";
 import { getNotifyEmails } from "@/lib/tickets/notifications";
 import { smtpConfigured } from "@/lib/email/send";
 import { appUrl } from "@/lib/constants";
+import { CopyLink } from "@/components/shared/copy-link";
 import { SettingsForm } from "@/components/admin/settings-form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +21,18 @@ export default async function SettingsPage() {
         <h1 className="text-2xl font-semibold tracking-tight">Notificaciones</h1>
         <p className="text-sm text-muted-foreground">Quién recibe los correos de la mesa de ayuda y cómo se reciben respuestas por correo.</p>
       </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Enlace general para solicitudes</CardTitle>
+          <CardDescription>
+            Compártelo por correo, Teams o WhatsApp. La persona escribe su correo de ACF, recibe un botón para entrar sin
+            contraseña ni registro y radica, consulta o responde sus solicitudes. Si ya entró en ese navegador, va directo al formulario.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <CopyLink url={appUrl("/solicitar")} />
+        </CardContent>
+      </Card>
       <SettingsForm notifyEmails={notify ?? ""} effective={effective} />
       <Card>
         <CardHeader>

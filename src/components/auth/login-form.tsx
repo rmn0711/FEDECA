@@ -45,6 +45,9 @@ export function LoginForm({ next, canRegister }: { next?: string; canRegister: b
             <Link href="/recuperar" className="text-muted-foreground hover:underline">
               ¿Olvidaste tu contraseña?
             </Link>
+            <Link href="/solicitar" className="text-muted-foreground hover:underline">
+              Entrar sin contraseña (enlace a mi correo)
+            </Link>
             {canRegister && (
               <Link href="/registro" className="font-medium text-[#d9342c] hover:underline">
                 Crear una cuenta con mi correo corporativo

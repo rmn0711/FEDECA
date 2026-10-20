@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { SESSION_COOKIE, verifySession } from "@/lib/auth/session";
 
 // Rutas que no requieren sesión.
-const PUBLIC_PATHS = ["/login", "/registro", "/recuperar", "/api/inbound-email", "/api/cron", "/acceso", "/api/marketing", "/api/whatsapp"];
+const PUBLIC_PATHS = ["/login", "/registro", "/recuperar", "/api/inbound-email", "/api/cron", "/acceso", "/api/marketing", "/api/whatsapp", "/solicitar", "/entrar"];
 
 export async function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;

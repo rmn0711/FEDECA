@@ -85,6 +85,16 @@ export const SCHEMA_SQL = [
     error TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
   )`,
+  `CREATE TABLE IF NOT EXISTS hd_login_links (
+    token_hash TEXT PRIMARY KEY,
+    email TEXT NOT NULL,
+    next TEXT,
+    ip TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    expires_at TIMESTAMPTZ NOT NULL,
+    used_at TIMESTAMPTZ
+  )`,
+  `CREATE INDEX IF NOT EXISTS hd_login_links_email_idx ON hd_login_links (email, created_at)`,
   `CREATE TABLE IF NOT EXISTS hd_password_resets (
     token_hash TEXT PRIMARY KEY,
     user_id INTEGER NOT NULL REFERENCES hd_users(id) ON DELETE CASCADE,

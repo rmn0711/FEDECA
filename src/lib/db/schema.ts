@@ -116,6 +116,17 @@ export const emailLog = pgTable("hd_email_log", {
   createdAt: ts("created_at").notNull().defaultNow(),
 });
 
+/** Enlaces de ingreso sin contraseña (un solo uso, 30 min). Se guarda el hash, nunca el token. */
+export const loginLinks = pgTable("hd_login_links", {
+  tokenHash: text("token_hash").primaryKey(),
+  email: text("email").notNull(),
+  next: text("next"),
+  ip: text("ip"),
+  createdAt: ts("created_at").notNull().defaultNow(),
+  expiresAt: ts("expires_at").notNull(),
+  usedAt: ts("used_at"),
+});
+
 export const passwordResets = pgTable("hd_password_resets", {
   tokenHash: text("token_hash").primaryKey(),
   userId: integer("user_id")
