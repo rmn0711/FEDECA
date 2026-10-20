@@ -1,5 +1,6 @@
 "use server";
 
+import { safeNextPath } from "@/lib/secure";
 import { audit } from "@/lib/audit";
 import { createHash, randomBytes } from "node:crypto";
 import bcrypt from "bcryptjs";
@@ -8,20 +9,18 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { getDb } from "@/lib/db";
 import { passwordResets, users } from "@/lib/db/schema";
-import { endSession, requireUser, startSession } from "@/lib/auth";
+import { endSession, requireUser, revokeSessions, startSession } from "@/lib/auth";
 import { sendEmail } from "@/lib/email/send";
 import { renderTicketEmail } from "@/lib/email/template";
 import { appUrl } from "@/lib/constants";
 import { validatePassword } from "@/lib/auth/password";
+import { LOCKED_MESSAGE, isLockedOut } from "@/lib/auth/lockout";
 
 export type FormState = { error: string | null; ok?: string | null };
 
 const sha256 = (v: string) => createHash("sha256").update(v).digest("hex");
 
-function safeNext(next: unknown) {
-  const n = typeof next === "string" ? next : "";
-  return n.startsWith("/") && !n.startsWith("//") ? n : "/dashboard";
-}
+const safeNext = safeNextPath;
 
 export async function login(_: FormState, formData: FormData): Promise<FormState> {
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
@@ -33,6 +32,7 @@ export async function login(_: FormState, formData: FormData): Promise<FormState
   if (user && !user.passwordHash) {
     return { error: "Aún no has creado tu contraseña. Ábrela desde tu enlace de acceso o usa «¿Olvidaste tu contraseña?»." };
   }
+  if (user && (await isLockedOut(user.id))) return { error: LOCKED_MESSAGE };
   // Siempre se compara un hash para no revelar si el correo existe por el tiempo de respuesta.
   const ok = await bcrypt.compare(password, user?.passwordHash ?? "$2a$10$invalidinvalidinvalidinvalidinvalidinvalidinvalidinva");
   if (!user || !ok) {
@@ -100,6 +100,12 @@ export async function requestPasswordReset(_: FormState, formData: FormData): Pr
   const db = await getDb();
   const [user] = await db.select().from(users).where(and(eq(users.email, email), eq(users.active, true)));
   if (!user) return genericOk;
+  // Máximo 3 correos de recuperación por hora para cada cuenta (evita usar la plataforma para spam).
+  const recent = await db
+    .select({ token: passwordResets.tokenHash })
+    .from(passwordResets)
+    .where(and(eq(passwordResets.userId, user.id), gt(passwordResets.expiresAt, new Date())));
+  if (recent.length >= 3) return genericOk;
 
   const token = randomBytes(32).toString("base64url");
   await db.insert(passwordResets).values({
@@ -120,7 +126,7 @@ export async function requestPasswordReset(_: FormState, formData: FormData): Pr
     ctaLabel: "Crear nueva contraseña",
     ctaUrl: url,
   });
-  await sendEmail({ kind: "password", to: [user.email], subject: "Restablecer contraseña · Mesa de Ayuda ACF", html, text });
+  await sendEmail({ kind: "password", to: [user.email], subject: "Restablecer contraseña · Conecta ACF", html, text });
   return genericOk;
 }
 
@@ -142,6 +148,7 @@ export async function confirmPasswordReset(_: FormState, formData: FormData): Pr
   await db.update(users).set({ passwordHash: await bcrypt.hash(password, 10) }).where(eq(users.id, reset.userId));
   await db.update(passwordResets).set({ usedAt: new Date() }).where(eq(passwordResets.tokenHash, reset.tokenHash));
   await audit(reset.userId, "restablecer_clave", "usuario", reset.userId, "Contraseña restablecida por enlace de correo");
+  await revokeSessions(reset.userId);
   await startSession(reset.userId);
   redirect("/dashboard");
 }
@@ -159,6 +166,9 @@ export async function changePassword(_: FormState, formData: FormData): Promise<
   if (pwError) return { error: pwError };
   await db.update(users).set({ passwordHash: await bcrypt.hash(password, 10) }).where(eq(users.id, me.id));
   await audit(me.id, "cambiar_clave", "usuario", me.id, `${me.name} cambió su contraseña`);
+  // Cierra las sesiones de otros dispositivos y mantiene abierta esta.
+  await revokeSessions(me.id);
+  await startSession(me.id);
   return { error: null, ok: "Contraseña actualizada." };
 }
 

@@ -3,9 +3,9 @@ import type { MetadataRoute } from "next";
 // Permite instalar la plataforma en el celular (necesario para notificaciones en iPhone).
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Mesa de Ayuda ACF",
-    short_name: "Mesa ACF",
-    description: "Mesa de ayuda, espacio de equipo y chat de Constructora ACF",
+    name: "Conecta ACF",
+    short_name: "Conecta",
+    description: "Mesa de ayuda, espacio de equipo, chat y alertas de Constructora ACF",
     start_url: "/dashboard",
     display: "standalone",
     background_color: "#19191b",

@@ -33,7 +33,7 @@ export async function sendPush(userIds: number[], payload: { title: string; body
         if (status === 404 || status === 410) {
           await db.delete(pushSubscriptions).where(eq(pushSubscriptions.endpoint, s.endpoint));
         } else {
-          console.error("[mesa-de-ayuda] Error enviando push:", status ?? e);
+          console.error("[conecta] Error enviando push:", status ?? e);
         }
       }
     })

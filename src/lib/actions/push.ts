@@ -1,5 +1,6 @@
 "use server";
 
+import { isPushEndpoint } from "@/lib/secure";
 import { and, eq } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { pushSubscriptions } from "@/lib/db/schema";
@@ -8,7 +9,7 @@ import { sendPush } from "@/lib/push";
 
 export async function savePushSubscriptionAction(sub: { endpoint: string; keys: { p256dh: string; auth: string } }, userAgent: string) {
   const me = await requireUser();
-  if (!/^https:\/\//.test(sub.endpoint) || !sub.keys?.p256dh || !sub.keys?.auth) return { ok: false as const, error: "Suscripción no válida." };
+  if (!isPushEndpoint(sub.endpoint) || !sub.keys?.p256dh || !sub.keys?.auth) return { ok: false as const, error: "Suscripción no válida." };
   const db = await getDb();
   await db
     .insert(pushSubscriptions)
@@ -26,6 +27,6 @@ export async function removePushSubscriptionAction(endpoint: string) {
 
 export async function testPushAction() {
   const me = await requireUser();
-  await sendPush([me.id], { title: "Mesa de Ayuda ACF", body: "¡Las notificaciones están activas en este dispositivo! 🔔", url: "/dashboard", tag: "test" });
+  await sendPush([me.id], { title: "Conecta ACF", body: "¡Las notificaciones están activas en este dispositivo! 🔔", url: "/dashboard", tag: "test" });
   return { ok: true as const };
 }

@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { requireUser } from "@/lib/auth";
+import { requireRole } from "@/lib/auth";
 import { getPage, getPageTree } from "@/lib/workspace/queries";
 import { PageEditor } from "@/components/workspace/page-editor";
 
@@ -15,7 +15,7 @@ export default async function TeamPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ editar?: string }>;
 }) {
-  const user = await requireUser();
+  const user = await requireRole("admin", "agent");
   const id = Number((await params).id);
   const { editar } = await searchParams;
   const [row, nodes] = await Promise.all([getPage(id), getPageTree()]);

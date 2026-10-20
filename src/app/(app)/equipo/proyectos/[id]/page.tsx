@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, FileText } from "lucide-react";
-import { requireUser } from "@/lib/auth";
+import { requireRole } from "@/lib/auth";
 import { getProject, getProjectPages, getProjectTasks, getProjects } from "@/lib/workspace/queries";
 import { getStaff } from "@/lib/tickets/queries";
 import { Button } from "@/components/ui/button";
@@ -22,7 +22,7 @@ export default async function ProjectPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ vista?: string; tarea?: string }>;
 }) {
-  const user = await requireUser();
+  const user = await requireRole("admin", "agent");
   const id = Number((await params).id);
   const sp = await searchParams;
   const project = await getProject(id);

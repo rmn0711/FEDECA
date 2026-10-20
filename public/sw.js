@@ -1,4 +1,4 @@
-/* Service worker de la Mesa de Ayuda ACF: recibe notificaciones push y abre la plataforma al tocarlas. */
+/* Service worker de Conecta ACF: recibe notificaciones push y abre la plataforma al tocarlas. */
 self.addEventListener("install", () => self.skipWaiting());
 self.addEventListener("activate", (event) => event.waitUntil(self.clients.claim()));
 
@@ -7,10 +7,10 @@ self.addEventListener("push", (event) => {
   try {
     data = event.data ? event.data.json() : {};
   } catch {
-    data = { title: "Mesa de Ayuda ACF", body: event.data ? event.data.text() : "" };
+    data = { title: "Conecta ACF", body: event.data ? event.data.text() : "" };
   }
   event.waitUntil(
-    self.registration.showNotification(data.title || "Mesa de Ayuda ACF", {
+    self.registration.showNotification(data.title || "Conecta ACF", {
       body: data.body || "",
       icon: "/icon-192.png",
       badge: "/badge-96.png",

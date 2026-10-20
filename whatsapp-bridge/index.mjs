@@ -97,7 +97,7 @@ async function start() {
     version,
     auth: state,
     logger: log,
-    browser: Browsers.appropriate("Mesa de Ayuda ACF"),
+    browser: Browsers.appropriate("Conecta ACF"),
     markOnlineOnConnect: false,
     syncFullHistory: false,
   });

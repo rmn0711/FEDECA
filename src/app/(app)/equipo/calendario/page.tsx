@@ -1,4 +1,4 @@
-import { requireUser } from "@/lib/auth";
+import { requireRole } from "@/lib/auth";
 import { getProjects, getTasksBetween } from "@/lib/workspace/queries";
 import { getStaff } from "@/lib/tickets/queries";
 import { monthRange, todayISO } from "@/lib/workspace/constants";
@@ -7,7 +7,7 @@ import { TeamCalendar } from "@/components/workspace/task-list-sheet";
 export const metadata = { title: "Calendario del equipo" };
 
 export default async function TeamCalendarPage({ searchParams }: { searchParams: Promise<{ mes?: string }> }) {
-  const user = await requireUser();
+  const user = await requireRole("admin", "agent");
   const { mes } = await searchParams;
   const month = mes && /^\d{4}-\d{2}$/.test(mes) ? mes : todayISO().slice(0, 7);
   const { from, to } = monthRange(month);

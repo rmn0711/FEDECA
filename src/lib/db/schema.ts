@@ -21,6 +21,8 @@ export const users = pgTable("hd_users", {
   lastLoginAt: ts("last_login_at"),
   /** Enlace personal de acceso: /acceso/<token> (la persona solo digita su contraseña) */
   accessToken: text("access_token").unique(),
+  /** Sube al cambiar la contraseña: invalida las sesiones abiertas */
+  sessionVersion: integer("session_version").notNull().default(0),
   /** Celular para WhatsApp en formato internacional sin "+" (ej. 573001234567) */
   whatsappPhone: text("whatsapp_phone"),
   /** Aceptó recibir alertas por WhatsApp (requisito de Meta) */

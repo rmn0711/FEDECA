@@ -1,3 +1,4 @@
+import { requireRole } from "@/lib/auth";
 import { CheckCircle2, Inbox, MessageCircle, PlugZap, QrCode, Smartphone, Users, WifiOff } from "lucide-react";
 import { getBridgeState } from "@/lib/whatsapp/send";
 import { getWhatsappOverview } from "@/lib/whatsapp/queries";
@@ -14,6 +15,8 @@ export const metadata = { title: "WhatsApp" };
 const STATUS_LABEL: Record<string, string> = { enviado: "Enviado", enviado_manual: "Enviado a mano", recibido: "Recibido", descartado: "Descartado" };
 
 export default async function WhatsappAdminPage() {
+  // Además del layout: cada página valida el rol (las páginas y el layout se generan en paralelo).
+  await requireRole("admin");
   const [bridge, o] = await Promise.all([getBridgeState(), getWhatsappOverview()]);
   const connected = bridge.state === "conectado";
   const tokenSet = Boolean(process.env.WHATSAPP_BRIDGE_TOKEN && process.env.WHATSAPP_BRIDGE_TOKEN.length >= 24);

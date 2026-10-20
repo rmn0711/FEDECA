@@ -36,7 +36,7 @@ export async function handleInbound(input: { from: string; text: string; quotedI
     await db.update(users).set({ whatsappOptIn: false }).where(eq(users.id, user.id));
     await audit(user.id, "baja_whatsapp", "usuario", user.id, `${user.name} se dio de baja de las alertas por WhatsApp`);
     // Se confirma una única vez, sin pie de alertas.
-    await enqueueWhatsapp({ userId: user.id, phone, kind: "baja", body: "Listo, ya no recibirás alertas de la Mesa de Ayuda ACF por WhatsApp. Puedes activarlas de nuevo en tu perfil." });
+    await enqueueWhatsapp({ userId: user.id, phone, kind: "baja", body: "Listo, ya no recibirás alertas de Conecta ACF por WhatsApp. Puedes activarlas de nuevo en tu perfil." });
     return { handled: true, action: "baja" };
   }
 

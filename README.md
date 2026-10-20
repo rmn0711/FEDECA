@@ -1,6 +1,6 @@
-# Mesa de Ayuda ACF
+# Conecta ACF
 
-Plataforma interna de solicitudes (helpdesk) de Constructora ACF, con el mismo estilo visual del **Cotizador ACF**
+Plataforma interna de Constructora ACF que conecta al área de marketing digital y generación de demanda con el resto de la empresa: mesa de ayuda (helpdesk), espacio de equipo, chat, seguimientos y alertas por correo, push y WhatsApp, con el mismo estilo visual del **Cotizador ACF**
 (panel lateral de vidrio oscuro, rojo de marca `#d9342c`, componentes shadcn/Base UI, tipografía Geist).
 
 Los usuarios registran lo que necesitan y su prioridad; la mesa de ayuda recibe un correo **con copia al responsable
@@ -154,6 +154,25 @@ automáticamente por API desde el CRM o el cotizador: `POST /api/marketing/metri
 
 **Configuración → Auditoría**: ingresos y intentos fallidos, cambios de usuarios, roles y permisos, categorías,
 configuración, proyectos, canales, plantillas, aprobaciones, métricas y exportaciones, con fecha, persona e IP.
+
+## Seguridad
+
+- **Módulo de WhatsApp solo para el administrador**: el QR, la bandeja, el historial y los números de las personas
+  solo los ve el rol `admin` (validado en el layout, en cada página y en cada acción del servidor). El servicio
+  vinculado se autentica con `WHATSAPP_BRIDGE_TOKEN` (mínimo 24 caracteres, comparación en tiempo constante).
+  La carpeta `whatsapp-bridge/auth` contiene la sesión de tu WhatsApp: **no la compartas ni la subas a git**
+  (ya está en `.gitignore`); si el equipo donde corre se pierde, cierra la sesión desde WhatsApp → Dispositivos vinculados.
+- **Sesiones**: cookie `httpOnly`, `Secure` y `SameSite=Lax`, firmada con `AUTH_SECRET`. Cambiar o restablecer la
+  contraseña cierra las sesiones abiertas en los demás dispositivos; desactivar una cuenta la saca de inmediato.
+- **Fuerza bruta**: 8 intentos fallidos en 15 minutos bloquean temporalmente la cuenta (correo y enlace personal).
+  Máximo 3 correos de recuperación por hora por cuenta.
+- **Roles validados en cada página**: el espacio de equipo y el chat son solo para admin y responsables; la
+  administración, solo para el admin.
+- **Cabeceras**: CSP (solo recursos propios), HSTS, `X-Frame-Options`, `nosniff`, `Referrer-Policy` y `Permissions-Policy`.
+- **Secretos de cron, correo entrante, API de marketing y WhatsApp** se comparan en tiempo constante.
+- **Sin clave por defecto en producción**: sin `ADMIN_PASSWORD` fuerte no se crea el administrador inicial.
+- **Auto-registro apagado** por defecto (`ALLOWED_EMAIL_DOMAINS` vacío): las cuentas las crea el administrador.
+  El webhook de correo entrante también está apagado mientras `INBOUND_EMAIL_SECRET` esté vacío.
 
 ## Roles
 

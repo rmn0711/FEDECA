@@ -44,7 +44,7 @@ export function notifyUsers(n: UserNotification) {
       await sendEmail({ kind, to, subject, html, text });
     }
   };
-  const run = () => task().catch((e) => console.error("[mesa-de-ayuda] Error enviando notificación:", e));
+  const run = () => task().catch((e) => console.error("[conecta] Error enviando notificación:", e));
   try {
     after(run);
   } catch {

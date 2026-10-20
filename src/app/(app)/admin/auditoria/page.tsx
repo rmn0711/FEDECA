@@ -1,3 +1,4 @@
+import { requireRole } from "@/lib/auth";
 import Link from "next/link";
 import { ShieldCheck } from "lucide-react";
 import { getAuditLog, type AuditFilters } from "@/lib/audit-queries";
@@ -31,6 +32,8 @@ const ENTITIES: Record<string, string> = {
 const DANGER = new Set(["ingreso_fallido", "ingreso_bloqueado", "eliminar", "quitar_miembros"]);
 
 export default async function AuditPage({ searchParams }: { searchParams: Promise<AuditFilters> }) {
+  // Además del layout: cada página valida el rol (las páginas y el layout se generan en paralelo).
+  await requireRole("admin");
   const f = await searchParams;
   const [{ rows, total, page, pages }, people] = await Promise.all([getAuditLog(f), getUsersList()]);
   const href = (p: number) => {

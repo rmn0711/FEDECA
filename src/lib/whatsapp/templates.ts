@@ -13,7 +13,7 @@ export const WA_PREF_LABELS: Record<WaPref, { label: string; description: string
   resumen: { label: "Resumen diario", description: "Lo vencido y lo que vence hoy, a las 7:00 a. m.", staffOnly: true },
 };
 
-export const WA_FOOTER = "_Mesa de Ayuda ACF · responde este mensaje para agregar un comentario · escribe BAJA para no recibir más alertas_";
+export const WA_FOOTER = "_Conecta ACF · responde este mensaje para agregar un comentario · escribe BAJA para no recibir más alertas_";
 
 /** Une las líneas de un mensaje y agrega el pie. */
 export function waMessage(lines: Array<string | null | undefined | false>, footer = true) {

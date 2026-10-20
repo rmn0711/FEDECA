@@ -1,5 +1,5 @@
 export const ORG_NAME = process.env.NEXT_PUBLIC_ORG_NAME || "Constructora ACF";
-export const APP_NAME = "Mesa de Ayuda";
+export const APP_NAME = "Conecta";
 
 /** Variantes del Badge (mismas del cotizador). */
 export type BadgeVariant = "default" | "secondary" | "destructive" | "outline" | "success" | "warning" | "info" | "neutral";

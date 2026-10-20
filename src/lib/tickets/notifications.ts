@@ -42,7 +42,7 @@ const STATUS_PILL: Record<Status, Omit<EmailPill, "label">> = {
  */
 export function queueNotification(ticketId: number, event: NotificationEvent) {
   const task = () =>
-    notify(ticketId, event).catch((e) => console.error("[mesa-de-ayuda] Error en notificación:", e));
+    notify(ticketId, event).catch((e) => console.error("[conecta] Error en notificación:", e));
   try {
     after(task);
   } catch {
@@ -214,8 +214,8 @@ async function whatsappFor(ticketId: number, event: NotificationEvent) {
 }
 
 async function notify(ticketId: number, event: NotificationEvent) {
-  await pushFor(ticketId, event).catch((e) => console.error("[mesa-de-ayuda] Error en push de solicitud:", e));
-  await whatsappFor(ticketId, event).catch((e) => console.error("[mesa-de-ayuda] Error en WhatsApp de solicitud:", e));
+  await pushFor(ticketId, event).catch((e) => console.error("[conecta] Error en push de solicitud:", e));
+  await whatsappFor(ticketId, event).catch((e) => console.error("[conecta] Error en WhatsApp de solicitud:", e));
   const ctx = await loadContext(ticketId);
   if (!ctx) return;
   const { ticket, category, requester } = ctx;

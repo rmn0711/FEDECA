@@ -1,11 +1,11 @@
 import { getUsersList } from "@/lib/tickets/queries";
 import { UsersManager } from "@/components/admin/users-manager";
-import { requireUser } from "@/lib/auth";
+import { requireRole } from "@/lib/auth";
 
 export const metadata = { title: "Usuarios" };
 
 export default async function UsersAdminPage() {
-  const me = await requireUser();
+  const me = await requireRole("admin");
   const users = await getUsersList();
   return (
     <div className="space-y-6">

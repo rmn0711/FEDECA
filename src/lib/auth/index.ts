@@ -2,16 +2,18 @@ import "server-only";
 import { cache } from "react";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { users, type User } from "@/lib/db/schema";
 import type { Role } from "@/lib/constants";
-import { SESSION_COOKIE, SESSION_DAYS, signSession, verifySession } from "./session";
+import { SESSION_COOKIE, SESSION_DAYS, readSession, signSession } from "./session";
 
-export type SessionUser = Omit<User, "passwordHash" | "accessToken">;
+export type SessionUser = Omit<User, "passwordHash" | "accessToken" | "sessionVersion">;
 
 export async function startSession(userId: number) {
-  const token = await signSession(userId);
+  const db = await getDb();
+  const [u] = await db.select({ sv: users.sessionVersion }).from(users).where(eq(users.id, userId));
+  const token = await signSession(userId, u?.sv ?? 0);
   (await cookies()).set(SESSION_COOKIE, token, {
     httpOnly: true,
     sameSite: "lax",
@@ -27,13 +29,14 @@ export async function endSession() {
 
 /** Usuario de la sesión actual (o null). Se memoriza por petición. */
 export const getCurrentUser = cache(async (): Promise<SessionUser | null> => {
-  const userId = await verifySession((await cookies()).get(SESSION_COOKIE)?.value);
-  if (!userId) return null;
+  const session = await readSession((await cookies()).get(SESSION_COOKIE)?.value);
+  if (!session) return null;
   const db = await getDb();
-  const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
-  if (!user || !user.active) return null;
+  const [user] = await db.select().from(users).where(eq(users.id, session.uid)).limit(1);
+  // Cuenta desactivada o contraseña cambiada después de iniciar esta sesión.
+  if (!user || !user.active || user.sessionVersion !== session.sv) return null;
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { passwordHash, accessToken, ...rest } = user;
+  const { passwordHash, accessToken, sessionVersion, ...rest } = user;
   return rest;
 });
 
@@ -51,4 +54,10 @@ export async function requireRole(...roles: Role[]): Promise<SessionUser> {
 
 export function isStaff(user: Pick<SessionUser, "role">) {
   return user.role === "admin" || user.role === "agent";
+}
+
+/** Cierra todas las sesiones abiertas de una persona (al cambiar o restablecer su contraseña). */
+export async function revokeSessions(userId: number) {
+  const db = await getDb();
+  await db.update(users).set({ sessionVersion: sql`${users.sessionVersion} + 1` }).where(eq(users.id, userId));
 }

@@ -68,7 +68,7 @@ export async function whatsappUsers(
 
 /** Igual que whatsappUsers, sin bloquear la respuesta al usuario. */
 export function queueWhatsapp(...args: Parameters<typeof whatsappUsers>) {
-  const run = () => whatsappUsers(...args).catch((e) => console.error("[mesa-de-ayuda] Error en WhatsApp:", e));
+  const run = () => whatsappUsers(...args).catch((e) => console.error("[conecta] Error en WhatsApp:", e));
   try {
     after(run);
   } catch {

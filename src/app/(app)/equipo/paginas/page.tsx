@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { FileText } from "lucide-react";
 import { getPageTree } from "@/lib/workspace/queries";
+import { requireRole } from "@/lib/auth";
 import { EmptyState } from "@/components/ui/empty-state";
 
 export const metadata = { title: "Páginas del equipo" };
 
 export default async function PagesIndex() {
+  await requireRole("admin", "agent");
   const nodes = await getPageTree();
   const roots = nodes.filter((n) => n.parentId === null);
   return (

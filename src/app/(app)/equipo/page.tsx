@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { AlarmClock, ArrowRight, CalendarDays, CheckCircle2, FileText, ListTodo } from "lucide-react";
-import { requireUser } from "@/lib/auth";
+import { requireRole } from "@/lib/auth";
 import { getMyTasks, getProjects, getRecentPages, getUpcomingTasks, getWorkload } from "@/lib/workspace/queries";
 import { relativeTime } from "@/lib/format";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,7 +15,7 @@ import { ProjectDialog } from "@/components/workspace/project-dialog";
 export const metadata = { title: "Espacio de equipo" };
 
 export default async function TeamHome() {
-  const user = await requireUser();
+  const user = await requireRole("admin", "agent");
   const [projects, mine, upcoming, pages, workload] = await Promise.all([
     getProjects(),
     getMyTasks(user.id),

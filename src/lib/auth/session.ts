@@ -9,25 +9,31 @@ function secretKey() {
     if (process.env.NODE_ENV === "production") {
       throw new Error("AUTH_SECRET debe estar configurado (mínimo 32 caracteres).");
     }
-    return new TextEncoder().encode("dev-only-secret-mesa-de-ayuda-acf-no-usar-en-produccion");
+    return new TextEncoder().encode("dev-only-secret-conecta-acf-no-usar-en-produccion");
   }
   return new TextEncoder().encode(secret);
 }
 
-export async function signSession(userId: number) {
-  return new SignJWT({ uid: userId })
+/** sv = versión de sesión del usuario: al cambiar la contraseña sube y las sesiones anteriores dejan de valer. */
+export async function signSession(userId: number, sessionVersion: number) {
+  return new SignJWT({ uid: userId, sv: sessionVersion })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime(`${SESSION_DAYS}d`)
     .sign(secretKey());
 }
 
-export async function verifySession(token: string | undefined): Promise<number | null> {
+export async function readSession(token: string | undefined): Promise<{ uid: number; sv: number } | null> {
   if (!token) return null;
   try {
     const { payload } = await jwtVerify(token, secretKey(), { algorithms: ["HS256"] });
-    return typeof payload.uid === "number" ? payload.uid : null;
+    if (typeof payload.uid !== "number") return null;
+    return { uid: payload.uid, sv: typeof payload.sv === "number" ? payload.sv : 0 };
   } catch {
     return null;
   }
+}
+
+export async function verifySession(token: string | undefined): Promise<number | null> {
+  return (await readSession(token))?.uid ?? null;
 }

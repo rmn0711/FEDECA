@@ -122,5 +122,5 @@ export async function seedDemo(db: DB) {
       }
     }
   }
-  console.info("[mesa-de-ayuda] Datos de demostración cargados (contraseña de los usuarios demo: Demo2026*)");
+  console.info("[conecta] Datos de demostración cargados (contraseña de los usuarios demo: Demo2026*)");
 }

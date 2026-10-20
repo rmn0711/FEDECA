@@ -14,7 +14,7 @@ export async function GET(request: Request) {
   const r = await getMonthlyReport(mes);
 
   const wb = new ExcelJS.Workbook();
-  wb.creator = "Mesa de Ayuda ACF";
+  wb.creator = "Conecta ACF";
   wb.created = new Date();
   const pct = (v: number | null) => (v === null ? "" : v / 100);
   const styleHeader = (ws: ExcelJS.Worksheet) => {
@@ -143,7 +143,7 @@ export async function GET(request: Request) {
   return new Response(Buffer.from(buffer), {
     headers: {
       "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      "Content-Disposition": `attachment; filename="informe-mesa-de-ayuda-${mes}.xlsx"`,
+      "Content-Disposition": `attachment; filename="informe-conecta-acf-${mes}.xlsx"`,
     },
   });
 }

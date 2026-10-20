@@ -46,6 +46,6 @@ export async function seedDefaultTeam(db: DB) {
   }
   await db.insert(settings).values({ key: FLAG, value: new Date().toISOString() }).onConflictDoNothing();
   if (created && !process.env.TEAM_INITIAL_PASSWORD) {
-    console.info(`[mesa-de-ayuda] Contraseña inicial de los responsables: ${teamPassword} (pídales cambiarla en Mi perfil)`);
+    console.info(`[conecta] Contraseña inicial de los responsables: ${teamPassword} (pídales cambiarla en Mi perfil)`);
   }
 }

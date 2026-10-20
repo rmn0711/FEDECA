@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { AlarmClock, Inbox, ListTodo, MessageSquareReply } from "lucide-react";
-import { requireUser } from "@/lib/auth";
+import { requireRole } from "@/lib/auth";
 import { getStaff } from "@/lib/tickets/queries";
 import { getMyTasks, getProjects } from "@/lib/workspace/queries";
 import { getPipelineTickets } from "@/lib/workspace/pipeline";
@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 export const metadata = { title: "Pipeline" };
 
 export default async function PipelinePage({ searchParams }: { searchParams: Promise<{ persona?: string }> }) {
-  const user = await requireUser();
+  const user = await requireRole("admin", "agent");
   const staff = await getStaff();
   const { persona } = await searchParams;
   // El líder puede ver el pipeline de cada integrante; cada responsable ve el suyo.

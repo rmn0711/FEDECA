@@ -1,3 +1,4 @@
+import { requireRole } from "@/lib/auth";
 import { getCategoriesWithResponsible, getStaff } from "@/lib/tickets/queries";
 import { CategoryCard } from "@/components/admin/category-card";
 import { CATEGORIES } from "@/lib/categories";
@@ -5,6 +6,8 @@ import { CATEGORIES } from "@/lib/categories";
 export const metadata = { title: "Categorías y responsables" };
 
 export default async function CategoriesAdminPage() {
+  // Además del layout: cada página valida el rol (las páginas y el layout se generan en paralelo).
+  await requireRole("admin");
   const [categories, staff] = await Promise.all([getCategoriesWithResponsible(), getStaff()]);
   return (
     <div className="space-y-6">

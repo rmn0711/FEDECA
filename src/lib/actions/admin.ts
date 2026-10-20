@@ -6,7 +6,7 @@ import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { getDb } from "@/lib/db";
 import { categories, settings, users } from "@/lib/db/schema";
-import { requireRole } from "@/lib/auth";
+import { requireRole, revokeSessions, startSession } from "@/lib/auth";
 import { ROLES, type Role } from "@/lib/constants";
 import { sendEmail, smtpConfigured } from "@/lib/email/send";
 import { renderTicketEmail } from "@/lib/email/template";
@@ -91,6 +91,10 @@ export async function saveUserAction(_: FormState, formData: FormData): Promise<
     }
     const [before] = await db.select().from(users).where(eq(users.id, id));
     await db.update(users).set(patch).where(eq(users.id, id));
+    if (password) {
+      await revokeSessions(id);
+      if (id === admin.id) await startSession(id);
+    }
     const changes: string[] = [];
     if (before && before.role !== role) changes.push(`rol ${before.role} → ${role}`);
     if (before && before.active !== active) changes.push(active ? "activado" : "desactivado");
@@ -114,9 +118,9 @@ export async function saveUserAction(_: FormState, formData: FormData): Promise<
       await sendAccessLinkEmail(created);
     } else if (formData.get("sendWelcome") === "on") {
       const { html, text } = renderTicketEmail({
-        preheader: "Ya tienes acceso a la Mesa de Ayuda ACF",
+        preheader: "Ya tienes acceso a Conecta ACF",
         eyebrow: "Bienvenida",
-        heading: `Hola ${name.split(" ")[0]}, ya tienes acceso a la Mesa de Ayuda`,
+        heading: `Hola ${name.split(" ")[0]}, ya tienes acceso a Conecta ACF`,
         intro:
           "Desde la plataforma puedes registrar solicitudes de Diseño gráfico, IA, Cotizador, CRM, Redes sociales, Sistemas y Sinco Soft, y hacer seguimiento hasta su solución.",
         code: "Tu usuario",
@@ -126,10 +130,10 @@ export async function saveUserAction(_: FormState, formData: FormData): Promise<
           ["Usuario", email],
           ["Contraseña temporal", password],
         ],
-        ctaLabel: "Ingresar a la Mesa de Ayuda",
+        ctaLabel: "Ingresar a Conecta ACF",
         ctaUrl: appUrl("/login"),
       });
-      await sendEmail({ kind: "welcome", to: [email], subject: "Tu acceso a la Mesa de Ayuda ACF", html, text });
+      await sendEmail({ kind: "welcome", to: [email], subject: "Tu acceso a Conecta ACF", html, text });
     }
   }
   revalidatePath("/admin/usuarios");
@@ -158,18 +162,18 @@ export async function sendTestEmailAction(_: FormState, formData: FormData): Pro
   const admin = await requireRole("admin");
   const to = String(formData.get("to") ?? admin.email).trim();
   const { html, text } = renderTicketEmail({
-    preheader: "Correo de prueba de la Mesa de Ayuda",
+    preheader: "Correo de prueba de Conecta ACF",
     eyebrow: "Prueba",
     heading: "La configuración de correo funciona",
-    intro: "Si recibiste este mensaje, la Mesa de Ayuda puede enviar notificaciones.",
+    intro: "Si recibiste este mensaje, Conecta ACF puede enviar notificaciones.",
     code: "HD-00000",
     title: "Correo de prueba",
     pills: [{ label: "Prueba", color: "#ffffff", bg: "#19191b" }],
     details: [["Enviado por", admin.name]],
-    ctaLabel: "Abrir la Mesa de Ayuda",
+    ctaLabel: "Abrir Conecta ACF",
     ctaUrl: appUrl("/dashboard"),
   });
-  await sendEmail({ kind: "test", to: [to], subject: "Prueba · Mesa de Ayuda ACF", html, text });
+  await sendEmail({ kind: "test", to: [to], subject: "Prueba · Conecta ACF", html, text });
   revalidatePath("/admin/correos");
   return smtpConfigured()
     ? { error: null, ok: `Correo de prueba enviado a ${to}. Revisa el registro de correos.` }

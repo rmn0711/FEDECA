@@ -1,3 +1,4 @@
+import { requireRole } from "@/lib/auth";
 import { CheckCircle2, Clock3, Gauge, Inbox, Star, UserCheck } from "lucide-react";
 import { getMonthlyReport, shiftMonthStr } from "@/lib/reports";
 import { formatDuration } from "@/lib/format";
@@ -21,6 +22,8 @@ function complianceTone(v: number | null) {
 }
 
 export default async function ReportsPage({ searchParams }: { searchParams: Promise<{ mes?: string }> }) {
+  // Además del layout: cada página valida el rol (las páginas y el layout se generan en paralelo).
+  await requireRole("admin");
   const { mes } = await searchParams;
   const current = new Intl.DateTimeFormat("sv-SE", { timeZone: "America/Bogota" }).format(new Date()).slice(0, 7);
   const month = mes && /^\d{4}-\d{2}$/.test(mes) && mes <= current ? mes : current;
@@ -31,7 +34,7 @@ export default async function ReportsPage({ searchParams }: { searchParams: Prom
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="text-sm text-muted-foreground">{ORG_NAME} · Mesa de Ayuda</p>
+          <p className="text-sm text-muted-foreground">{ORG_NAME} · Conecta ACF</p>
           <h1 className="text-2xl font-semibold tracking-tight first-letter:uppercase">Informe de gestión · {r.label}</h1>
           <p className="text-sm text-muted-foreground">Solicitudes recibidas y resueltas en el mes, cumplimiento de tiempos, satisfacción y temas frecuentes.</p>
         </div>

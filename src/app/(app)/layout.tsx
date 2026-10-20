@@ -32,7 +32,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <header className="sticky top-3 z-20 mx-3 mt-3 flex h-14 items-center gap-2 rounded-2xl border border-white/10 bg-[#19191b]/90 px-3 text-white shadow-[0_10px_40px_rgba(0,0,0,0.35)] backdrop-blur-2xl md:mx-6 md:px-4">
             <AppSidebarMobile />
             <p className="text-sm font-semibold tracking-wide text-white/90">
-              Mesa de Ayuda <span className="text-[#ff5a50]">ACF</span>
+              Conecta <span className="text-[#ff5a50]">ACF</span>
             </p>
             <div className="ml-auto flex items-center gap-2">
               {isStaff(user) && (

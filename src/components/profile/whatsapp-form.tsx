@@ -28,7 +28,7 @@ export function WhatsappForm({ phone, optIn, prefs, staff }: { phone: string; op
       <label className="flex items-start gap-2 text-sm">
         <input type="checkbox" name="optIn" defaultChecked={optIn} className="mt-0.5 size-4 accent-[#25d366]" />
         <span>
-          <span className="font-medium">Acepto recibir alertas de la Mesa de Ayuda ACF por WhatsApp.</span>
+          <span className="font-medium">Acepto recibir alertas de Conecta ACF por WhatsApp.</span>
           <span className="block text-xs text-muted-foreground">Puedes darte de baja cuando quieras escribiendo BAJA o desmarcando esta opción.</span>
         </span>
       </label>

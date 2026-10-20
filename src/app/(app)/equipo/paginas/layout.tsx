@@ -1,7 +1,9 @@
 import { getPageTree } from "@/lib/workspace/queries";
+import { requireRole } from "@/lib/auth";
 import { PageTreeClient } from "@/components/workspace/page-tree-client";
 
 export default async function PagesLayout({ children }: { children: React.ReactNode }) {
+  await requireRole("admin", "agent");
   const nodes = await getPageTree();
   return (
     <div className="grid gap-6 lg:grid-cols-[260px_minmax(0,1fr)]">

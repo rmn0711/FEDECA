@@ -62,7 +62,7 @@ export async function sendEmail(email: OutgoingEmail) {
     try {
       const user = process.env.SMTP_USER!;
       await getTransporter().sendMail({
-        from: `${process.env.SMTP_FROM_NAME || "Mesa de Ayuda ACF"} <${process.env.SMTP_FROM || user}>`,
+        from: `${process.env.SMTP_FROM_NAME || "Conecta ACF"} <${process.env.SMTP_FROM || user}>`,
         replyTo: process.env.MAIL_REPLY_TO || undefined,
         to,
         cc: cc.length ? cc : undefined,
@@ -74,10 +74,10 @@ export async function sendEmail(email: OutgoingEmail) {
     } catch (e) {
       status = "fallido";
       error = e instanceof Error ? e.message : String(e);
-      console.error("[mesa-de-ayuda] Error enviando correo:", error);
+      console.error("[conecta] Error enviando correo:", error);
     }
   } else {
-    console.info(`[mesa-de-ayuda] (correo simulado) ${email.subject} → ${to.join(", ")}${cc.length ? ` cc ${cc.join(", ")}` : ""}`);
+    console.info(`[conecta] (correo simulado) ${email.subject} → ${to.join(", ")}${cc.length ? ` cc ${cc.join(", ")}` : ""}`);
   }
 
   const db = await getDb();

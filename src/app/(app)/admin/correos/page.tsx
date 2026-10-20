@@ -1,3 +1,4 @@
+import { requireRole } from "@/lib/auth";
 import { getRecentEmails } from "@/lib/tickets/queries";
 import { smtpConfigured } from "@/lib/email/send";
 import { EmailLog } from "@/components/admin/email-log";
@@ -5,6 +6,8 @@ import { EmailLog } from "@/components/admin/email-log";
 export const metadata = { title: "Registro de correos" };
 
 export default async function EmailsAdminPage() {
+  // Además del layout: cada página valida el rol (las páginas y el layout se generan en paralelo).
+  await requireRole("admin");
   const emails = await getRecentEmails(200);
   return (
     <div className="space-y-6">

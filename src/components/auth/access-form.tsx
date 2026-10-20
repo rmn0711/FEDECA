@@ -39,7 +39,7 @@ export function AccessForm({
           <UserAvatar fullName={name} size="lg" />
         </div>
         <CardTitle>Hola, {first}</CardTitle>
-        <CardDescription>{needsPassword ? "Crea tu contraseña para entrar a la Mesa de Ayuda." : "Escribe tu contraseña para continuar."}</CardDescription>
+        <CardDescription>{needsPassword ? "Crea tu contraseña para entrar a Conecta ACF." : "Escribe tu contraseña para continuar."}</CardDescription>
       </CardHeader>
       <CardContent>
         <form action={action} className="space-y-4">

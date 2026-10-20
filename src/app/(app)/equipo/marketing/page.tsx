@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Banknote, CalendarCheck2, Handshake, Magnet, Target, TrendingUp, UserCheck2, Wallet } from "lucide-react";
-import { requireUser } from "@/lib/auth";
+import { requireRole } from "@/lib/auth";
 import { getMetricOptions, getMetrics, totals } from "@/lib/marketing/metrics";
 import { cop, delta, num, pctStr } from "@/lib/marketing/format";
 import { monthLabel, shiftMonthStr } from "@/lib/reports";
@@ -29,7 +29,7 @@ export default async function MarketingPage({
 }: {
   searchParams: Promise<{ periodo?: string; proyecto?: string; vista?: string; mes?: string }>;
 }) {
-  await requireUser();
+  await requireRole("admin", "agent");
   const sp = await searchParams;
   const options = await getMetricOptions();
   const current = new Intl.DateTimeFormat("sv-SE", { timeZone: "America/Bogota" }).format(new Date()).slice(0, 7);

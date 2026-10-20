@@ -49,6 +49,6 @@ export async function audit(
       ip,
     });
   } catch (e) {
-    console.error("[mesa-de-ayuda] No se pudo registrar la auditoría:", e);
+    console.error("[conecta] No se pudo registrar la auditoría:", e);
   }
 }

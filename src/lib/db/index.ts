@@ -67,7 +67,11 @@ async function seed(db: DB) {
 
 async function createInitialUsers(db: DB) {
   const email = (process.env.ADMIN_EMAIL || "jromano@acfcia.com").toLowerCase().trim();
-  const password = process.env.ADMIN_PASSWORD || "Admin123*";
+  const password = process.env.ADMIN_PASSWORD || (process.env.NODE_ENV === "production" ? "" : "Admin123*");
+  // En producción no hay clave por defecto: sin ADMIN_PASSWORD fuerte no se crea el administrador.
+  if (process.env.NODE_ENV === "production" && (password.length < 12 || !/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/\d/.test(password))) {
+    throw new Error("Configura ADMIN_PASSWORD (mínimo 12 caracteres, con mayúsculas, minúsculas y números) para crear el administrador inicial.");
+  }
   await db.insert(schema.users).values({
     name: process.env.ADMIN_NAME || "José Romano",
     email,
@@ -75,7 +79,7 @@ async function createInitialUsers(db: DB) {
     role: "admin",
     department: "Mesa de Ayuda",
   });
-  console.info(`[mesa-de-ayuda] Administrador inicial creado: ${email}`);
+  console.info(`[conecta] Administrador inicial creado: ${email}`);
 
   if (process.env.SEED_DEMO === "true") {
     const { seedDemo } = await import("./demo");

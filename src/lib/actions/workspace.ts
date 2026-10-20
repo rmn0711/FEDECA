@@ -122,7 +122,7 @@ async function notifyAssignment(taskId: number, actorId: number) {
 }
 
 function queue(fn: () => Promise<unknown>) {
-  const task = () => fn().catch((e) => console.error("[mesa-de-ayuda] Error en notificación de tarea:", e));
+  const task = () => fn().catch((e) => console.error("[conecta] Error en notificación de tarea:", e));
   try {
     after(task);
   } catch {

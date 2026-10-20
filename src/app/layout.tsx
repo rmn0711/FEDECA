@@ -17,8 +17,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: { default: `${APP_NAME} ACF`, template: `%s · ${APP_NAME} ACF` },
-  description: `Mesa de ayuda interna de ${ORG_NAME}: solicitudes de Diseño, IA, Cotizador, CRM, Redes sociales, Sistemas y Sinco Soft.`,
-  appleWebApp: { capable: true, title: "Mesa ACF", statusBarStyle: "black-translucent" },
+  description: `Conecta ACF: mesa de ayuda, espacio de equipo, chat y alertas de ${ORG_NAME}.`,
+  appleWebApp: { capable: true, title: "Conecta ACF", statusBarStyle: "black-translucent" },
   icons: { apple: "/apple-touch-icon.png" },
 };
 

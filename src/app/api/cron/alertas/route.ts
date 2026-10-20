@@ -1,3 +1,4 @@
+import { secretMatches } from "@/lib/secure";
 import { and, eq, inArray } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { users } from "@/lib/db/schema";
@@ -14,7 +15,7 @@ import { waMessage } from "@/lib/whatsapp/templates";
  */
 export async function GET(request: Request) {
   const secret = process.env.CRON_SECRET;
-  if (!secret || request.headers.get("authorization") !== `Bearer ${secret}`) {
+  if (!secretMatches(request.headers.get("authorization"), secret ? `Bearer ${secret}` : null)) {
     return Response.json({ error: "No autorizado" }, { status: 401 });
   }
   const db = await getDb();

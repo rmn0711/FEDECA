@@ -245,7 +245,7 @@ export async function sendMessage(user: Actor, conversationId: number, body: str
   }
   await db.update(conversations).set({ lastMessageAt: now }).where(eq(conversations.id, conversationId));
   await markRead(user, conversationId);
-  await pushForMessage(user.id, conversationId, text || "📎 Archivo adjunto").catch((e) => console.error("[mesa-de-ayuda] Error en push de chat:", e));
+  await pushForMessage(user.id, conversationId, text || "📎 Archivo adjunto").catch((e) => console.error("[conecta] Error en push de chat:", e));
   return msg;
 }
 

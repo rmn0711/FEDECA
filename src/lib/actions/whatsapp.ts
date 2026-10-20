@@ -29,7 +29,7 @@ export async function saveMyWhatsappAction(_: FormState, formData: FormData): Pr
       userId: me.id,
       phone,
       kind: "bienvenida",
-      body: waMessage([`👋 Hola ${me.name.split(" ")[0]}, desde ahora recibirás aquí las alertas de la *Mesa de Ayuda ACF*.`]),
+      body: waMessage([`👋 Hola ${me.name.split(" ")[0]}, desde ahora recibirás aquí las alertas de *Conecta ACF*.`]),
     });
   }
   revalidatePath("/perfil");
@@ -70,7 +70,7 @@ export async function sendTestWhatsappAction() {
   const db = await getDb();
   const [u] = await db.select().from(users).where(eq(users.id, me.id));
   if (!u?.whatsappPhone) return { ok: false as const, error: "Primero registra tu celular en Mi perfil." };
-  await enqueueWhatsapp({ userId: me.id, phone: u.whatsappPhone, kind: "prueba", body: "✅ Prueba de la Mesa de Ayuda ACF: los mensajes por WhatsApp funcionan." });
+  await enqueueWhatsapp({ userId: me.id, phone: u.whatsappPhone, kind: "prueba", body: "✅ Prueba de Conecta ACF: los mensajes por WhatsApp funcionan." });
   revalidatePath("/admin/whatsapp");
   return { ok: true as const };
 }

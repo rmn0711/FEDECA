@@ -1,3 +1,4 @@
+import { requireRole } from "@/lib/auth";
 import { getSetting } from "@/lib/tickets/queries";
 import { getNotifyEmails } from "@/lib/tickets/notifications";
 import { smtpConfigured } from "@/lib/email/send";
@@ -9,6 +10,8 @@ import { Badge } from "@/components/ui/badge";
 export const metadata = { title: "Notificaciones" };
 
 export default async function SettingsPage() {
+  // Además del layout: cada página valida el rol (las páginas y el layout se generan en paralelo).
+  await requireRole("admin");
   const [notify, effective] = await Promise.all([getSetting("notify_emails"), getNotifyEmails()]);
   const inbound = Boolean(process.env.INBOUND_EMAIL_SECRET);
   return (

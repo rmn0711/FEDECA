@@ -1,24 +1,21 @@
 "use server";
 
+import { safeNextPath } from "@/lib/secure";
 import bcrypt from "bcryptjs";
-import { and, eq, gte, sql } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { getDb } from "@/lib/db";
-import { auditLog, users } from "@/lib/db/schema";
+import { users } from "@/lib/db/schema";
 import { startSession } from "@/lib/auth";
 import { validatePassword } from "@/lib/auth/password";
+import { LOCKED_MESSAGE, isLockedOut } from "@/lib/auth/lockout";
 import { REMEMBER_COOKIE, findByAccessToken } from "@/lib/auth/access";
 import { audit } from "@/lib/audit";
 import type { FormState } from "./auth";
 
-const MAX_FAILS = 8;
-const WINDOW_MS = 15 * 60_000;
 
-function safeNext(next: unknown) {
-  const n = typeof next === "string" ? next : "";
-  return n.startsWith("/") && !n.startsWith("//") ? n : "/dashboard";
-}
+const safeNext = safeNextPath;
 
 /** Ingreso con enlace personal: la persona solo escribe su contraseña (o la crea la primera vez). */
 export async function accessLoginAction(_: FormState, formData: FormData): Promise<FormState> {
@@ -29,11 +26,7 @@ export async function accessLoginAction(_: FormState, formData: FormData): Promi
 
   const db = await getDb();
   // Bloqueo temporal tras varios intentos fallidos (protege el enlace si alguien más lo obtiene).
-  const [{ fails }] = await db
-    .select({ fails: sql<number>`count(*)::int` })
-    .from(auditLog)
-    .where(and(eq(auditLog.actorId, user.id), eq(auditLog.action, "ingreso_fallido"), gte(auditLog.createdAt, new Date(Date.now() - WINDOW_MS))));
-  if (fails >= MAX_FAILS) return { error: "Demasiados intentos. Espera 15 minutos o usa «¿Olvidaste tu contraseña?»." };
+  if (await isLockedOut(user.id)) return { error: LOCKED_MESSAGE };
 
   if (!user.passwordHash) {
     const confirm = String(formData.get("confirm") ?? "");

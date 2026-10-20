@@ -31,7 +31,7 @@ export default async function ProfilePage() {
       <Card>
         <CardHeader>
           <CardTitle>Alertas por WhatsApp</CardTitle>
-          <CardDescription>Te llegan desde el WhatsApp de la Mesa de Ayuda. Puedes responder el mensaje y tu respuesta queda en la solicitud.</CardDescription>
+          <CardDescription>Te llegan desde el WhatsApp de Conecta ACF. Puedes responder el mensaje y tu respuesta queda en la solicitud.</CardDescription>
         </CardHeader>
         <CardContent>
           <WhatsappForm phone={user.whatsappPhone ?? ""} optIn={user.whatsappOptIn} prefs={user.whatsappPrefs ?? {}} staff={isStaff(user)} />

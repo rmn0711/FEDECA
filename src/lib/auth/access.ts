@@ -37,9 +37,9 @@ export async function sendAccessLinkEmail(user: { id: number; name: string; emai
   const first = user.name.split(" ")[0];
   const needsPassword = !user.passwordHash;
   const { html, text } = renderTicketEmail({
-    preheader: "Tu acceso directo a la Mesa de Ayuda ACF",
+    preheader: "Tu acceso directo a Conecta ACF",
     eyebrow: "Tu acceso",
-    heading: `${first}, este es tu enlace a la Mesa de Ayuda`,
+    heading: `${first}, este es tu enlace a Conecta ACF`,
     intro: needsPassword
       ? "Ábrelo y crea tu contraseña. Después solo tendrás que escribirla para radicar solicitudes, consultarlas y responder. Guarda el enlace en tus favoritos."
       : "Ábrelo y escribe tu contraseña para radicar solicitudes, consultarlas y responder. Guarda el enlace en tus favoritos.",
@@ -47,8 +47,8 @@ export async function sendAccessLinkEmail(user: { id: number; name: string; emai
     title: user.email,
     pills: [],
     details: [["Importante", "Este enlace es personal: no lo compartas."]],
-    ctaLabel: needsPassword ? "Crear mi contraseña" : "Entrar a la Mesa de Ayuda",
+    ctaLabel: needsPassword ? "Crear mi contraseña" : "Entrar a Conecta ACF",
     ctaUrl: accessUrl(token),
   });
-  await sendEmail({ kind: "access", to: [user.email], subject: "Tu acceso a la Mesa de Ayuda ACF", html, text });
+  await sendEmail({ kind: "access", to: [user.email], subject: "Tu acceso a Conecta ACF", html, text });
 }

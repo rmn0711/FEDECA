@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { safeNextPath } from "@/lib/secure";
 import { getCurrentUser } from "@/lib/auth";
 import { findByAccessToken } from "@/lib/auth/access";
 import { AccessForm } from "@/components/auth/access-form";
@@ -28,6 +29,6 @@ export default async function AccessPage({
     );
   }
   const current = await getCurrentUser();
-  if (current?.id === user.id) redirect(next && next.startsWith("/") && !next.startsWith("//") ? next : "/dashboard");
+  if (current?.id === user.id) redirect(safeNextPath(next));
   return <AccessForm token={token} name={user.name} email={user.email} needsPassword={!user.passwordHash} next={next} />;
 }

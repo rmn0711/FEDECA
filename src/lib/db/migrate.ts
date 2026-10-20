@@ -313,6 +313,7 @@ export const SCHEMA_SQL = [
   `ALTER TABLE hd_users ADD COLUMN IF NOT EXISTS whatsapp_phone TEXT`,
   `ALTER TABLE hd_users ADD COLUMN IF NOT EXISTS whatsapp_opt_in BOOLEAN NOT NULL DEFAULT FALSE`,
   `ALTER TABLE hd_users ADD COLUMN IF NOT EXISTS whatsapp_prefs JSONB NOT NULL DEFAULT '{}'::jsonb`,
+  `ALTER TABLE hd_users ADD COLUMN IF NOT EXISTS session_version INTEGER NOT NULL DEFAULT 0`,
   `CREATE INDEX IF NOT EXISTS hd_users_whatsapp_phone_idx ON hd_users(whatsapp_phone)`,
   `CREATE TABLE IF NOT EXISTS hd_whatsapp_log (
     id SERIAL PRIMARY KEY,
