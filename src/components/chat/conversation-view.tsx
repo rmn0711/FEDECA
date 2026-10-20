@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowDown, ArrowLeft, FileText, Hash, Lock, LogOut, Paperclip, Pencil, Send, SmilePlus, Trash2, UserPlus, Users, X } from "lucide-react";
@@ -25,6 +26,8 @@ import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { UserAvatar } from "@/components/shared/user-avatar";
+import { StickerPicker } from "@/components/chat/sticker-picker";
+import { isUploadedSticker, messageSticker, stickerMessage, stickerSource } from "@/lib/chat/stickers";
 
 const POLL_MS = 3000;
 const QUICK = ["👍", "❤️", "😂", "🎉", "👀", "✅", "🙌", "🔥"];
@@ -55,6 +58,8 @@ const timeOf = (d: Date) => new Intl.DateTimeFormat("es-CO", { timeZone: "Americ
 const dayKey = (d: Date) => new Intl.DateTimeFormat("sv-SE", { timeZone: "America/Bogota" }).format(d);
 
 function MessageBody({ body, meName }: { body: string; meName: string }) {
+  const sticker = messageSticker(body);
+  if (sticker) return <Image src={stickerSource(sticker)} alt={`Sticker: ${sticker.label}`} width={180} height={180} className="my-1 h-40 w-40 object-contain" />;
   // Resalta las menciones @Nombre (especialmente las tuyas).
   const first = meName.split(" ")[0];
   const withMentions = body.replace(/(^|\s)@([\p{L}][\p{L}.-]*(?: [\p{Lu}][\p{L}]+)?)/gu, (_m, pre: string, name: string) => `${pre}**@${name}**`);
@@ -193,14 +198,15 @@ export function ConversationView({
     });
   }
 
-  async function send() {
-    const text = body.trim();
-    if ((!text && files.length === 0) || sending) return;
+  async function send(sticker?: { body: string; files: File[] }) {
+    const text = sticker ? sticker.body : body.trim();
+    const outgoingFiles = sticker ? sticker.files : files;
+    if ((!text && outgoingFiles.length === 0) || sending) return;
     setSending(true);
     const fd = new FormData();
     fd.set("conversationId", String(info.id));
     fd.set("body", text);
-    files.forEach((f) => fd.append("files", f));
+    outgoingFiles.forEach((f) => fd.append("files", f));
     // Mensaje optimista mientras el servidor confirma.
     const temp: ChatMessage = {
       id: -Date.now(),
@@ -216,24 +222,33 @@ export function ConversationView({
     };
     setItems((prev) => [...prev, temp]);
     stickToBottom.current = true;
-    setBody("");
-    const sentFiles = files;
-    setFiles([]);
-    const r = await sendMessageAction(fd);
-    setSending(false);
-    setItems((prev) => prev.filter((m) => m.id !== temp.id));
-    if (!r.ok) {
-      toast.error(r.error);
-      setBody(text);
-      setFiles(sentFiles);
-      return;
+    if (!sticker) {
+      setBody("");
+      setFiles([]);
     }
-    const p = await pollChatAction(info.id, cursor.current.since, cursor.current.afterId, true);
-    if (p.ok) {
-      cursor.current.since = p.data.serverTime;
-      merge(p.data.changes);
+    let accepted = false;
+    try {
+      const r = await sendMessageAction(fd);
+      if (!r.ok) throw new Error(r.error);
+      accepted = true;
+      const p = await pollChatAction(info.id, cursor.current.since, cursor.current.afterId, true);
+      if (p.ok) {
+        cursor.current.since = p.data.serverTime;
+        merge(p.data.changes);
+      }
+    } catch (error) {
+      if (!accepted) {
+        toast.error(error instanceof Error ? error.message : "No se pudo enviar el mensaje.");
+        if (!sticker) {
+          setBody((current) => current || text);
+          setFiles(outgoingFiles);
+        }
+      }
+    } finally {
+      setSending(false);
+      setItems((prev) => prev.filter((m) => m.id !== temp.id));
+      textarea.current?.focus();
     }
-    textarea.current?.focus();
   }
 
   function addFiles(list: FileList | File[] | null) {
@@ -407,7 +422,7 @@ export function ConversationView({
                           f.mime.startsWith("image/") ? (
                             <a key={f.id} href={`/api/chat-archivos/${f.id}`} target="_blank" rel="noreferrer">
                               {/* eslint-disable-next-line @next/next/no-img-element */}
-                              <img src={`/api/chat-archivos/${f.id}`} alt={f.filename} className="max-h-60 max-w-xs rounded-lg border object-cover" />
+                              <img src={`/api/chat-archivos/${f.id}`} alt={isUploadedSticker(f) ? `Sticker: ${f.filename.slice(8)}` : f.filename} className={isUploadedSticker(f) ? "h-40 w-40 object-contain" : "max-h-60 max-w-xs rounded-lg border object-cover"} />
                             </a>
                           ) : (
                             <a
@@ -470,7 +485,7 @@ export function ConversationView({
                           </div>
                         </PopoverContent>
                       </Popover>
-                      {mine && (
+                      {mine && m.body && !messageSticker(m.body) && (
                         <button type="button" onClick={() => setEditing({ id: m.id, body: m.body })} className="rounded-md p-1 text-muted-foreground hover:bg-accent" aria-label="Editar mensaje">
                           <Pencil className="size-4" />
                         </button>
@@ -574,6 +589,9 @@ export function ConversationView({
                   </div>
                 </PopoverContent>
               </Popover>
+              <StickerPicker disabled={sending}
+                onSelect={(id) => void send({ body: stickerMessage(id), files: [] })}
+                onUpload={(file) => void send({ body: "", files: [file] })} />
               <span className="hidden text-[11px] text-muted-foreground sm:inline">Enter envía · Shift+Enter nueva línea · **negrita** · @menciones</span>
             </div>
             <Button size="sm" onClick={() => void send()} disabled={sending || (!body.trim() && files.length === 0)} className="bg-[#d9342c] text-white hover:bg-[#c42d26]">
@@ -658,3 +676,4 @@ export function ConversationView({
     </div>
   );
 }
+

@@ -6,6 +6,7 @@ import { getDb } from "@/lib/db";
 import { conversationMembers, conversations, messageFiles, messageReactions, messages, users } from "@/lib/db/schema";
 import { MAX_FILE_BYTES, MAX_FILES, type Role } from "@/lib/constants";
 import { sendPush } from "@/lib/push";
+import { isUploadedSticker, messageSticker } from "./stickers";
 
 type Actor = { id: number; role: Role };
 
@@ -245,7 +246,9 @@ export async function sendMessage(user: Actor, conversationId: number, body: str
   }
   await db.update(conversations).set({ lastMessageAt: now }).where(eq(conversations.id, conversationId));
   await markRead(user, conversationId);
-  await pushForMessage(user.id, conversationId, text || "📎 Archivo adjunto").catch((e) => console.error("[conecta] Error en push de chat:", e));
+  const sticker = messageSticker(text);
+  const preview = sticker ? `Sticker: ${sticker.label}` : text || (real.some((file) => isUploadedSticker({ filename: file.name, mime: file.type })) ? "Sticker" : "📎 Archivo adjunto");
+  await pushForMessage(user.id, conversationId, preview).catch((e) => console.error("[conecta] Error en push de chat:", e));
   return msg;
 }
 
@@ -435,3 +438,4 @@ export async function getTeamForChat(user: Actor) {
     .where(and(eq(users.active, true), inArray(users.role, ["admin", "agent"]), ne(users.id, user.id)))
     .orderBy(asc(users.name));
 }
+
