@@ -3,6 +3,12 @@ import { getDb } from "@/lib/db";
 import { whatsappLog } from "@/lib/db/schema";
 import { setBridgeState } from "@/lib/whatsapp/send";
 import { bridgeAuthorized, unauthorized } from "@/lib/whatsapp/bridge-auth";
+import { deliverDueReminders } from "@/lib/followups/service";
+import { deliverOverdueAlerts } from "@/lib/tickets/overdue";
+
+// El servicio consulta cada 20 s: se aprovecha para entregar recordatorios y alertas de vencimiento
+// a tiempo aunque el plan de Vercel solo permita un cron diario (máximo una vez por minuto).
+let lastSweep = 0;
 
 /**
  * El servicio pide los mensajes pendientes. Se marcan "enviando"; si en 5 minutos no
@@ -12,6 +18,11 @@ export async function GET(request: Request) {
   if (!bridgeAuthorized(request)) return unauthorized();
   const limit = Math.min(10, Math.max(1, Number(new URL(request.url).searchParams.get("limit")) || 5));
   await setBridgeState({ state: "conectado" });
+  if (Date.now() - lastSweep > 60_000) {
+    lastSweep = Date.now();
+    await deliverDueReminders().catch(() => 0);
+    await deliverOverdueAlerts().catch(() => 0);
+  }
   const db = await getDb();
   const stale = new Date(Date.now() - 5 * 60_000);
   const candidates = await db

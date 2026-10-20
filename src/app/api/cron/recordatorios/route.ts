@@ -2,7 +2,7 @@ import { secretMatches } from "@/lib/secure";
 import { deliverDueReminders } from "@/lib/followups/service";
 import { deliverOverdueAlerts } from "@/lib/tickets/overdue";
 
-/** Entrega los recordatorios de seguimiento vencidos (Vercel Cron cada 15 minutos). */
+/** Entrega los recordatorios de seguimiento vencidos (Vercel Cron diario; también al abrir la plataforma y cuando consulta el servicio de WhatsApp). */
 export async function GET(request: Request) {
   const secret = process.env.CRON_SECRET;
   if (!secretMatches(request.headers.get("authorization"), secret ? `Bearer ${secret}` : null)) {

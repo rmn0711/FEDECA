@@ -109,8 +109,9 @@ intentos fallidos en 15 minutos el acceso se bloquea temporalmente.
 "Revisar con Elías el informe de pauta el jueves a las 3pm". Se detectan la fecha, la hora y la persona. Se guarda como
 **recordatorio para ti** o como **tarea asignada** en un proyecto (con un recordatorio para revisarla ese día). A la
 hora indicada llega el aviso por la plataforma, al celular y por correo. Se puede posponer (1 hora, mañana, lunes) y
-crear desde una solicitud ("Recordarme hacer seguimiento"). El cron `/api/cron/recordatorios` corre cada 15 minutos
-(requiere plan Pro de Vercel); con la plataforma abierta los avisos llegan igual al minuto.
+crear desde una solicitud ("Recordarme hacer seguimiento"). Los recordatorios se entregan al minuto
+mientras alguien tenga la plataforma abierta o el servicio de WhatsApp esté encendido; además, el cron
+`/api/cron/recordatorios` corre una vez al día (compatible con el plan gratuito de Vercel; en Pro puede ser cada 15 minutos).
 
 ## Base de conocimiento
 
