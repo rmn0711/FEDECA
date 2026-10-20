@@ -17,8 +17,27 @@ export type DB = PostgresJsDatabase<typeof schema>;
 // `next dev` no abra una conexión nueva en cada cambio.
 const globalForDb = globalThis as unknown as { __hdDb?: Promise<DB> };
 
+/**
+ * DATABASE_URL, o POSTGRES_URL si la base se conectó desde Vercel → Storage → Supabase.
+ * Se quitan parámetros propios de la integración (p. ej. "supa") que postgres-js enviaría al servidor.
+ */
+function databaseUrl() {
+  const raw = process.env.DATABASE_URL || process.env.POSTGRES_URL;
+  if (!raw) return null;
+  try {
+    const u = new URL(raw);
+    for (const key of Array.from(u.searchParams.keys())) if (key !== "sslmode") u.searchParams.delete(key);
+    return u.toString();
+  } catch {
+    return raw;
+  }
+}
+
 async function connect(): Promise<DB> {
-  const url = process.env.DATABASE_URL;
+  const url = databaseUrl();
+  if (!url && process.env.VERCEL) {
+    throw new Error("Falta la base de datos: conecta Supabase en Vercel → Storage o define DATABASE_URL.");
+  }
   let db: DB;
   let run: (statement: string) => Promise<unknown>;
 
