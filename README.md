@@ -11,8 +11,8 @@ plataforma y por correo**. Las respuestas a esos correos también pueden volver 
 ## Categorías
 
 Cada categoría tiene un **responsable** (Administración → Categorías y responsables) y campos propios.
-Responsables iniciales: **José Romano** (Sistemas, SINCO e IA), **Elías Saad** (CRM), **Mario Hernández**
-(Diseño gráfico) y **Claribel Marchena** (Redes sociales); Cotizador queda sin responsable hasta que se asigne.
+Responsables iniciales: **José Romano** (Sistemas, SINCO, IA y Cotizador), **Elías Saad** (CRM), **Mario Hernández**
+(Diseño gráfico) y **Claribel Marchena** (Redes sociales).
 Se crean en el primer arranque con los correos de `src/lib/db/team.ts`; ajústelos en Usuarios.
 
 | Categoría | Campos específicos |

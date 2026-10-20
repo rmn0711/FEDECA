@@ -6,7 +6,7 @@ import type { Role } from "@/lib/constants";
 
 /** Equipo responsable por defecto. Se puede ajustar después en Administración → Usuarios. */
 const TEAM: Array<{ name: string; email: string; role: Role; department: string; categories: string[] }> = [
-  { name: "José Romano", email: "jromano@acfcia.com", role: "admin", department: "Sistemas", categories: ["sistemas", "sinco", "ia"] },
+  { name: "José Romano", email: "jromano@acfcia.com", role: "admin", department: "Sistemas", categories: ["sistemas", "sinco", "ia", "cotizador"] },
   { name: "Elías Saad", email: "esaad@acfcia.com", role: "agent", department: "CRM", categories: ["crm"] },
   { name: "Mario Hernández", email: "disenografico@acfcia.com", role: "agent", department: "Diseño gráfico", categories: ["diseno"] },
   { name: "Claribel Marchena", email: "cmarchena@acfcia.com", role: "agent", department: "Redes sociales", categories: ["redes"] },
