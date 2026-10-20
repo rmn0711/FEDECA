@@ -45,7 +45,7 @@ export function LoginForm({ next, canRegister }: { next?: string; canRegister: b
             <Link href="/recuperar" className="text-muted-foreground hover:underline">
               ¿Olvidaste tu contraseña?
             </Link>
-            <Link href="/solicitar" className="text-muted-foreground hover:underline">
+            <Link href={next ? `/solicitar?next=${encodeURIComponent(next)}` : "/solicitar"} className="text-muted-foreground hover:underline">
               Entrar sin contraseña (enlace a mi correo)
             </Link>
             {canRegister && (
