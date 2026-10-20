@@ -309,4 +309,32 @@ export const SCHEMA_SQL = [
     updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     UNIQUE (month, project, channel)
   )`,
+  // ── WhatsApp Business (Cloud API) ──
+  `ALTER TABLE hd_users ADD COLUMN IF NOT EXISTS whatsapp_phone TEXT`,
+  `ALTER TABLE hd_users ADD COLUMN IF NOT EXISTS whatsapp_opt_in BOOLEAN NOT NULL DEFAULT FALSE`,
+  `ALTER TABLE hd_users ADD COLUMN IF NOT EXISTS whatsapp_prefs JSONB NOT NULL DEFAULT '{}'::jsonb`,
+  `CREATE INDEX IF NOT EXISTS hd_users_whatsapp_phone_idx ON hd_users(whatsapp_phone)`,
+  `CREATE TABLE IF NOT EXISTS hd_whatsapp_log (
+    id SERIAL PRIMARY KEY,
+    direction TEXT NOT NULL DEFAULT 'out',
+    user_id INTEGER REFERENCES hd_users(id) ON DELETE SET NULL,
+    phone TEXT NOT NULL,
+    kind TEXT NOT NULL,
+    template TEXT,
+    body TEXT,
+    ticket_id INTEGER REFERENCES hd_tickets(id) ON DELETE SET NULL,
+    wa_message_id TEXT,
+    status TEXT NOT NULL,
+    error TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    status_at TIMESTAMPTZ
+  )`,
+  `CREATE INDEX IF NOT EXISTS hd_whatsapp_log_msg_idx ON hd_whatsapp_log(wa_message_id)`,
+  `CREATE INDEX IF NOT EXISTS hd_whatsapp_log_ticket_idx ON hd_whatsapp_log(ticket_id, kind)`,
+  `ALTER TABLE hd_whatsapp_log ADD COLUMN IF NOT EXISTS attempts INTEGER NOT NULL DEFAULT 0`,
+  `ALTER TABLE hd_whatsapp_log ADD COLUMN IF NOT EXISTS claimed_at TIMESTAMPTZ`,
+  `CREATE INDEX IF NOT EXISTS hd_whatsapp_log_status_idx ON hd_whatsapp_log(status, created_at)`,
+  // Avisos de vencimiento ya enviados (para no repetirlos).
+  `ALTER TABLE hd_tickets ADD COLUMN IF NOT EXISTS response_alerted_at TIMESTAMPTZ`,
+  `ALTER TABLE hd_tickets ADD COLUMN IF NOT EXISTS due_alerted_at TIMESTAMPTZ`,
 ];

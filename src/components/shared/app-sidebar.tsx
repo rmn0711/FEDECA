@@ -11,6 +11,7 @@ import {
   FileBarChart,
   FolderKanban,
   ListTodo,
+  MessageCircle,
   MessagesSquare,
   NotebookText,
   Users2,
@@ -83,6 +84,7 @@ function buildGroups({ isAdmin, isStaff }: { isAdmin: boolean; isStaff: boolean 
         { href: "/admin/usuarios", label: "Usuarios", icon: Users },
         { href: "/admin/correos", label: "Registro de correos", icon: Mail },
         { href: "/admin/configuracion", label: "Notificaciones", icon: Settings },
+        { href: "/admin/whatsapp", label: "WhatsApp", icon: MessageCircle },
         { href: "/admin/auditoria", label: "Auditoría", icon: ShieldCheck },
       ],
     });

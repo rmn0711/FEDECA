@@ -35,6 +35,8 @@ type UserRow = {
   createdAt: string;
   lastLoginAt: string | null;
   hasPassword: boolean;
+  whatsappPhone: string | null;
+  whatsappOptIn: boolean;
   tickets: number;
 };
 
@@ -119,6 +121,14 @@ function UserDialog({ user, open, onClose, meId }: { user: UserRow | null; open:
               <Label htmlFor="u-phone">Teléfono</Label>
               <Input id="u-phone" name="phone" defaultValue={user?.phone ?? ""} />
             </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="u-wa">Celular WhatsApp</Label>
+              <Input id="u-wa" name="whatsappPhone" defaultValue={user?.whatsappPhone ?? ""} placeholder="300 123 4567" inputMode="tel" />
+            </div>
+            <label className="flex items-center gap-2 self-end pb-2 text-sm">
+              <input type="checkbox" name="whatsappOptIn" defaultChecked={user?.whatsappOptIn ?? false} className="size-4 accent-[#25d366]" />
+              Aceptó alertas por WhatsApp
+            </label>
             <div className="space-y-1.5 sm:col-span-2">
               <Label htmlFor="u-pass">{user ? "Nueva contraseña (dejar vacío para no cambiar)" : "Contraseña temporal (opcional)"}</Label>
               <Input id="u-pass" name="password" type="text" autoComplete="new-password" placeholder={user ? "Mínimo 8 caracteres, letras y números" : "Vacío: la persona la crea con su enlace"} />
@@ -324,6 +334,7 @@ export function UsersManager({ users, meId }: { users: UserRow[]; meId: number }
                   <TableCell className="hidden text-muted-foreground lg:table-cell" title={`Creado ${formatDate(u.createdAt)}`}>
                     {u.lastLoginAt ? relativeTime(u.lastLoginAt) : "Nunca"}
                     {!u.hasPassword && <Badge variant="warning" className="ml-1">Sin contraseña</Badge>}
+                    {u.whatsappOptIn && <Badge variant="success" className="ml-1">WhatsApp</Badge>}
                   </TableCell>
                   <TableCell className="flex gap-0.5">
                     <Button variant="ghost" size="icon" aria-label={`Enlace de acceso de ${u.name}`} title="Enlace de acceso" onClick={() => setLinkUser(u)}>

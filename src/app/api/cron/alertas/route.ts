@@ -5,6 +5,8 @@ import { getAlerts } from "@/lib/alerts";
 import { sendEmail } from "@/lib/email/send";
 import { renderTicketEmail } from "@/lib/email/template";
 import { appUrl } from "@/lib/constants";
+import { whatsappUsers } from "@/lib/whatsapp/send";
+import { waMessage } from "@/lib/whatsapp/templates";
 
 /**
  * Resumen diario de alertas por correo (lo vencido y lo que vence hoy).
@@ -43,6 +45,20 @@ export async function GET(request: Request) {
       ctaUrl: appUrl("/equipo/pipeline"),
     });
     await sendEmail({ kind: "digest", to: [person.email], subject: `Resumen del día · ${urgent.length} pendiente(s)`, html, text });
+    await whatsappUsers([person.id], "resumen", "resumen", () =>
+      waMessage(
+        [
+          `☀️ *Buenos días, ${person.name.split(" ")[0]}*`,
+          `Tienes *${urgent.length}* pendiente(s): ${overdue} vencido(s) y ${urgent.length - overdue} para hoy.`,
+          "",
+          ...urgent.slice(0, 8).map((a) => `${a.severity === "overdue" ? "🔴" : "🟠"} ${a.title} — _${a.detail}_`),
+          urgent.length > 8 ? `…y ${urgent.length - 8} más.` : null,
+          "",
+          `👉 ${appUrl("/equipo/pipeline")}`,
+        ],
+        false
+      )
+    );
     sent++;
   }
   return Response.json({ ok: true, sent });

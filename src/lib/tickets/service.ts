@@ -166,7 +166,7 @@ async function loadForAction(ticketId: number) {
 export async function addComment(
   user: Actor,
   ticketId: number,
-  input: { body: string; internal?: boolean; source?: "web" | "email" },
+  input: { body: string; internal?: boolean; source?: "web" | "email" | "whatsapp" },
   files: File[] = []
 ) {
   const { ticket, responsibleId } = await loadForAction(ticketId);

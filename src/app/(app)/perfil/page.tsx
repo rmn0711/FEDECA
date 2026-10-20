@@ -2,6 +2,8 @@ import { requireUser } from "@/lib/auth";
 import { ROLE_LABELS } from "@/lib/constants";
 import { ProfileForms } from "@/components/profile/profile-forms";
 import { PushSettings } from "@/components/shared/push-toggle";
+import { WhatsappForm } from "@/components/profile/whatsapp-form";
+import { isStaff } from "@/lib/auth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export const metadata = { title: "Mi perfil" };
@@ -24,6 +26,15 @@ export default async function ProfilePage() {
         </CardHeader>
         <CardContent>
           <PushSettings />
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle>Alertas por WhatsApp</CardTitle>
+          <CardDescription>Te llegan desde el WhatsApp de la Mesa de Ayuda. Puedes responder el mensaje y tu respuesta queda en la solicitud.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <WhatsappForm phone={user.whatsappPhone ?? ""} optIn={user.whatsappOptIn} prefs={user.whatsappPrefs ?? {}} staff={isStaff(user)} />
         </CardContent>
       </Card>
     </div>

@@ -4,6 +4,8 @@ import { getDb } from "@/lib/db";
 import { categories, followups, tasks, tickets, projects } from "@/lib/db/schema";
 import { OPEN_STATUSES, URGENCY_META, ticketCode, type Role } from "@/lib/constants";
 import { unreadTotal } from "@/lib/chat/service";
+import { getBridgeState } from "@/lib/whatsapp/send";
+import { pendingWhatsappCount } from "@/lib/whatsapp/queries";
 import { todayISO } from "@/lib/workspace/constants";
 import { relativeTime } from "@/lib/format";
 
@@ -147,6 +149,20 @@ export async function getAlerts(user: Actor): Promise<AlertsResult> {
           title: `${ticketCode(t.id)} · ${t.title}`,
           detail: t.assigneeId ? `Vencida ${relativeTime(t.dueAt)} (otro responsable)` : "Sin responsable asignado",
           href: `/solicitudes/${t.id}`,
+        });
+      }
+    }
+
+    if (user.role === "admin") {
+      const [pendingWa, bridge] = await Promise.all([pendingWhatsappCount(), getBridgeState()]);
+      if (pendingWa > 0 && bridge.state !== "conectado") {
+        alerts.push({
+          id: "wa-bridge",
+          category: "equipo",
+          severity: "today",
+          title: `WhatsApp desconectado: ${pendingWa} alerta(s) por enviar`,
+          detail: "Reconecta el servicio o envíalas a mano desde la bandeja",
+          href: "/admin/whatsapp",
         });
       }
     }

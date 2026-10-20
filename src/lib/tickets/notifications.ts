@@ -8,6 +8,8 @@ import { getCategory, formatFieldValue } from "@/lib/categories";
 import { STATUS_META, URGENCY_META, appUrl, ticketCode, type Status, type Urgency } from "@/lib/constants";
 import { sendEmail } from "@/lib/email/send";
 import { sendPush } from "@/lib/push";
+import { whatsappUsers, type WaPerson } from "@/lib/whatsapp/send";
+import { waMessage } from "@/lib/whatsapp/templates";
 import { inArray } from "drizzle-orm";
 import { renderTicketEmail, type EmailPill } from "@/lib/email/template";
 import { formatDateTime } from "@/lib/format";
@@ -135,8 +137,85 @@ async function pushFor(ticketId: number, event: NotificationEvent) {
   await sendPush(ids.filter((id) => id !== authorId), { title, body, url });
 }
 
+/** Enlace personal: a los solicitantes los lleva directo a su solicitud pidiendo solo la contraseña. */
+export function personalLink(u: Pick<WaPerson, "role" | "accessToken">, path: string) {
+  return u.role === "user" && u.accessToken ? appUrl(`/acceso/${u.accessToken}?next=${encodeURIComponent(path)}`) : appUrl(path);
+}
+
+/** Alertas por WhatsApp (bandeja que envía el número del líder). */
+async function whatsappFor(ticketId: number, event: NotificationEvent) {
+  const ctx = await loadContext(ticketId);
+  if (!ctx) return;
+  const t = ctx.ticket;
+  const code = ticketCode(t.id);
+  const path = `/solicitudes/${t.id}`;
+  const ownerId = ctx.assignee?.id ?? ctx.responsible?.id ?? null;
+  const prio = URGENCY_META[t.urgency].label;
+  const quote = (s: string) => `«${s.length > 400 ? `${s.slice(0, 400)}…` : s}»`;
+  const meta = { ticketId: t.id };
+  switch (event.kind) {
+    case "created": {
+      const db = await getDb();
+      const admins = (await db.select({ id: users.id }).from(users).where(inArray(users.role, ["admin"]))).map((a) => a.id);
+      await whatsappUsers(
+        [ownerId, ...admins].filter((v): v is number => Boolean(v) && v !== t.requesterId),
+        "solicitudes",
+        "nueva_solicitud",
+        (u) =>
+          waMessage([
+            `🔔 *Nueva solicitud ${code}* · Prioridad ${prio}`,
+            `*${ctx.category.name}* · de ${ctx.requester.name}`,
+            `_${t.title}_`,
+            `⏱️ Primera respuesta antes de: ${formatDateTime(t.responseDueAt)}`,
+            `👉 ${personalLink(u, path)}`,
+          ]),
+        meta
+      );
+      return;
+    }
+    case "comment": {
+      const author = await userName(event.authorId);
+      if (event.authorId === t.requesterId) {
+        await whatsappUsers([ownerId].filter((v): v is number => Boolean(v)), "solicitudes", "respuesta_solicitante", (u) =>
+          waMessage([`💬 *${author} respondió en ${code}*`, `_${t.title}_`, quote(event.body), `👉 ${personalLink(u, path)}`]), meta);
+      } else {
+        await whatsappUsers([t.requesterId], "mis_solicitudes", "respuesta_solicitud", (u) =>
+          waMessage([`💬 *Respuesta en tu solicitud ${code}*`, `_${t.title}_`, `*${author}:* ${quote(event.body)}`, `👉 ${personalLink(u, path)}`]), meta);
+      }
+      return;
+    }
+    case "status": {
+      const resolved = event.to === "resuelto";
+      await whatsappUsers([t.requesterId], "mis_solicitudes", "estado_solicitud", (u) =>
+        waMessage([
+          `${resolved ? "✅" : "📌"} Tu solicitud *${code}* ahora está *${STATUS_META[event.to].label}*`,
+          `_${t.title}_`,
+          event.comment ? quote(event.comment) : null,
+          resolved ? "¿Quedó bien? Confírmalo y califica la atención:" : null,
+          `👉 ${personalLink(u, path)}`,
+        ]), meta);
+      return;
+    }
+    case "assign": {
+      if (!ctx.assignee) return;
+      await whatsappUsers([ctx.assignee.id], "solicitudes", "asignada", (u) =>
+        waMessage([
+          `📥 *Te asignaron la solicitud ${code}* · Prioridad ${prio}`,
+          `*${ctx.category.name}* · de ${ctx.requester.name}`,
+          `_${t.title}_`,
+          `⏱️ Solución antes de: ${formatDateTime(t.dueAt)}`,
+          `👉 ${personalLink(u, path)}`,
+        ]), meta);
+      return;
+    }
+    default:
+      return;
+  }
+}
+
 async function notify(ticketId: number, event: NotificationEvent) {
   await pushFor(ticketId, event).catch((e) => console.error("[mesa-de-ayuda] Error en push de solicitud:", e));
+  await whatsappFor(ticketId, event).catch((e) => console.error("[mesa-de-ayuda] Error en WhatsApp de solicitud:", e));
   const ctx = await loadContext(ticketId);
   if (!ctx) return;
   const { ticket, category, requester } = ctx;

@@ -4,6 +4,8 @@ import { alias } from "drizzle-orm/pg-core";
 import { getDb } from "@/lib/db";
 import { followups, projects, tasks, tickets, users } from "@/lib/db/schema";
 import { sendPush } from "@/lib/push";
+import { whatsappUsers } from "@/lib/whatsapp/send";
+import { waMessage } from "@/lib/whatsapp/templates";
 import { sendEmail } from "@/lib/email/send";
 import { renderTicketEmail } from "@/lib/email/template";
 import { appUrl, ticketCode } from "@/lib/constants";
@@ -73,6 +75,9 @@ export async function deliverDueReminders(ownerId?: number) {
     if (!claimed) continue;
     const url = f.ticketId ? `/solicitudes/${f.ticketId}` : f.taskId && projectId ? `/equipo/proyectos/${projectId}?tarea=${f.taskId}` : "/equipo/seguimientos";
     await sendPush([f.ownerId], { title: "⏰ Seguimiento pendiente", body: f.title, url, tag: `followup-${f.id}` });
+    await whatsappUsers([f.ownerId], "recordatorios", "recordatorio", () =>
+      waMessage([`⏰ *Recordatorio de seguimiento*`, `*${f.title}*`, f.notes ? `_${f.notes.slice(0, 300)}_` : null, `👉 ${appUrl(url)}`], false)
+    );
     const { html, text } = renderTicketEmail({
       preheader: f.title,
       eyebrow: "Recordatorio de seguimiento",

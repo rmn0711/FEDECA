@@ -21,6 +21,12 @@ export const users = pgTable("hd_users", {
   lastLoginAt: ts("last_login_at"),
   /** Enlace personal de acceso: /acceso/<token> (la persona solo digita su contraseña) */
   accessToken: text("access_token").unique(),
+  /** Celular para WhatsApp en formato internacional sin "+" (ej. 573001234567) */
+  whatsappPhone: text("whatsapp_phone"),
+  /** Aceptó recibir alertas por WhatsApp (requisito de Meta) */
+  whatsappOptIn: boolean("whatsapp_opt_in").notNull().default(false),
+  /** Qué alertas recibe por WhatsApp; las ausentes cuentan como activas */
+  whatsappPrefs: jsonb("whatsapp_prefs").$type<Record<string, boolean>>().notNull().default({}),
 });
 
 export const categories = pgTable("hd_categories", {
@@ -57,6 +63,9 @@ export const tickets = pgTable("hd_tickets", {
   closedAt: ts("closed_at"),
   rating: integer("rating"),
   ratingComment: text("rating_comment"),
+  /** Cuándo se avisó que venció la primera respuesta / la solución */
+  responseAlertedAt: ts("response_alerted_at"),
+  dueAlertedAt: ts("due_alerted_at"),
   createdAt: ts("created_at").notNull().defaultNow(),
   updatedAt: ts("updated_at").notNull().defaultNow(),
 });
@@ -372,6 +381,27 @@ export const marketingMetrics = pgTable(
   },
   (t) => [unique().on(t.month, t.project, t.channel)]
 );
+
+export const whatsappLog = pgTable("hd_whatsapp_log", {
+  id: serial("id").primaryKey(),
+  /** Bandeja de WhatsApp. out = alerta para enviar desde el número del líder; in = respuesta recibida */
+  direction: text("direction").notNull().default("out"),
+  userId: integer("user_id").references(() => users.id, { onDelete: "set null" }),
+  phone: text("phone").notNull(),
+  kind: text("kind").notNull(),
+  template: text("template"),
+  body: text("body"),
+  ticketId: integer("ticket_id").references(() => tickets.id, { onDelete: "set null" }),
+  waMessageId: text("wa_message_id"),
+  /** pendiente | enviando | enviado | enviado_manual | fallido | descartado | recibido */
+  status: text("status").notNull(),
+  error: text("error"),
+  attempts: integer("attempts").notNull().default(0),
+  /** Cuándo lo tomó el servicio de envío (para reintentar si se queda colgado) */
+  claimedAt: ts("claimed_at"),
+  createdAt: ts("created_at").notNull().defaultNow(),
+  statusAt: ts("status_at"),
+});
 
 export type User = typeof users.$inferSelect;
 export type Ticket = typeof tickets.$inferSelect;

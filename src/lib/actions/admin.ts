@@ -14,6 +14,7 @@ import { appUrl } from "@/lib/constants";
 import { splitEmails } from "@/lib/tickets/notifications";
 import { validatePassword } from "@/lib/auth/password";
 import { accessUrl, ensureAccessToken, newAccessToken, sendAccessLinkEmail } from "@/lib/auth/access";
+import { normalizePhone } from "@/lib/whatsapp/send";
 import type { FormState } from "./auth";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -64,6 +65,10 @@ export async function saveUserAction(_: FormState, formData: FormData): Promise<
   const department = String(formData.get("department") ?? "").trim() || null;
   const phone = String(formData.get("phone") ?? "").trim() || null;
   const active = formData.get("active") !== "off";
+  const waRaw = String(formData.get("whatsappPhone") ?? "").trim();
+  const whatsappPhone = waRaw ? normalizePhone(waRaw) : null;
+  if (waRaw && !whatsappPhone) return { error: "El celular de WhatsApp no es válido (ej. 300 123 4567)." };
+  const whatsappOptIn = formData.get("whatsappOptIn") === "on" && Boolean(whatsappPhone);
   const password = String(formData.get("password") ?? "");
 
   if (name.length < 3) return { error: "Escribe el nombre completo." };
@@ -78,7 +83,7 @@ export async function saveUserAction(_: FormState, formData: FormData): Promise<
   if (dup && dup.id !== id) return { error: "Ya existe un usuario con ese correo." };
 
   if (id) {
-    const patch: Partial<typeof users.$inferInsert> = { name, email, role, department, phone, active };
+    const patch: Partial<typeof users.$inferInsert> = { name, email, role, department, phone, active, whatsappPhone, whatsappOptIn };
     if (password) {
       const pwError = validatePassword(password);
       if (pwError) return { error: pwError };
@@ -101,7 +106,7 @@ export async function saveUserAction(_: FormState, formData: FormData): Promise<
     }
     const [created] = await db
       .insert(users)
-      .values({ name, email, role, department, phone, active, passwordHash: password ? await bcrypt.hash(password, 10) : "", accessToken: newAccessToken() })
+      .values({ name, email, role, department, phone, active, whatsappPhone, whatsappOptIn, passwordHash: password ? await bcrypt.hash(password, 10) : "", accessToken: newAccessToken() })
       .returning();
     await audit(admin.id, "crear", "usuario", created.id, `Usuario creado: ${name} (${email}) con rol ${role}`);
 

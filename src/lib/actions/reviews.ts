@@ -55,6 +55,7 @@ export async function submitReviewAction(formData: FormData): Promise<Result<{ i
     title: `Pieza para aprobar (v${version})`,
     body: `${me.name}: ${task.title}`,
     url: `/equipo/revisiones/${r.id}`,
+    whatsapp: { pref: "tareas", kind: "pieza", lines: [`🎨 *${me.name} subió una pieza para tu aprobación* (versión ${version})`, `*${task.title}*`, note ? `«${note}»` : ""].filter(Boolean) },
     email: {
       kind: "review",
       subject: `Para aprobar: ${task.title} (versión ${version})`,
@@ -126,6 +127,11 @@ export async function decideReviewAction(reviewId: number, decision: "aprobada" 
     title: approved ? `✅ Aprobada: v${detail.version}` : `✏️ Cambios en v${detail.version}`,
     body: `${detail.taskTitle}${comment.trim() ? ` · ${comment.trim().slice(0, 100)}` : ""}`,
     url: `/equipo/revisiones/${reviewId}`,
+    whatsapp: {
+      pref: "tareas",
+      kind: "pieza",
+      lines: [approved ? `✅ *Pieza aprobada* (versión ${detail.version})` : `✏️ *Cambios en la pieza* (versión ${detail.version})`, `*${detail.taskTitle}*`, comment.trim() ? `«${comment.trim()}»` : ""].filter(Boolean),
+    },
     email: {
       kind: "review",
       subject: `${approved ? "Aprobada" : "Requiere cambios"}: ${detail.taskTitle} (versión ${detail.version})`,

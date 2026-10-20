@@ -24,6 +24,8 @@ import { getTemplate } from "@/lib/workspace/templates";
 import { canManageTicket } from "@/lib/tickets/access";
 import { sendEmail } from "@/lib/email/send";
 import { sendPush } from "@/lib/push";
+import { whatsappUsers } from "@/lib/whatsapp/send";
+import { waMessage } from "@/lib/whatsapp/templates";
 import { renderTicketEmail } from "@/lib/email/template";
 import type { FormState } from "./auth";
 
@@ -104,6 +106,14 @@ async function notifyAssignment(taskId: number, actorId: number) {
     ctaUrl: appUrl(`/equipo/proyectos/${t.projectId}?tarea=${t.id}`),
   });
   await sendEmail({ kind: "task", to: [assignee.email], subject: `Tarea asignada: ${t.title}`, html, text });
+  await whatsappUsers([t.assigneeId!], "tareas", "tarea_asignada", () =>
+    waMessage([
+      `🗂️ *${actor?.name ?? "Tu líder"} te asignó una tarea*`,
+      `*${t.title}*`,
+      `${detail.projectIcon} ${detail.projectName} · Entrega: ${t.dueDate ? formatShortDate(t.dueDate) : "sin fecha"} · Prioridad ${URGENCY_META[t.priority].label}`,
+      `👉 ${appUrl(`/equipo/proyectos/${t.projectId}?tarea=${t.id}`)}`,
+    ], false)
+  );
   await sendPush([t.assigneeId!], {
     title: `Nueva tarea · ${detail.projectName}`,
     body: `${actor?.name ?? ""}: ${t.title}`,

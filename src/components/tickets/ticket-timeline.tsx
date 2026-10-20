@@ -1,4 +1,4 @@
-import { ArrowRight, CheckCircle2, FileText, Lock, Mail, Paperclip, RefreshCcw, Star, Tag, UserCheck, Zap } from "lucide-react";
+import { ArrowRight, CheckCircle2, FileText, Lock, Mail, MessageCircle, Paperclip, RefreshCcw, Star, Tag, UserCheck, Zap } from "lucide-react";
 import type { TicketDetail } from "@/lib/tickets/queries";
 import { STATUS_META, URGENCY_META, type Status, type Urgency } from "@/lib/constants";
 import { getCategory } from "@/lib/categories";
@@ -83,6 +83,12 @@ function Bubble({
             </Badge>
           )}
           {label && <Badge variant="neutral">{label}</Badge>}
+          {event.source === "whatsapp" && (
+            <Badge variant="success">
+              <MessageCircle />
+              Por WhatsApp
+            </Badge>
+          )}
           {event.source === "email" && (
             <Badge variant="info">
               <Mail />

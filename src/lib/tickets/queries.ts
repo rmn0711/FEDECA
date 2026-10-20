@@ -356,6 +356,8 @@ export async function getUsersList() {
       createdAt: users.createdAt,
       lastLoginAt: users.lastLoginAt,
       hasPassword: sql<boolean>`${users.passwordHash} <> ''`,
+      whatsappPhone: users.whatsappPhone,
+      whatsappOptIn: users.whatsappOptIn,
       tickets: sql<number>`coalesce(${open.n}, 0)`,
     })
     .from(users)
