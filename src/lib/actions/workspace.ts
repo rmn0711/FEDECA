@@ -1,16 +1,29 @@
 "use server";
 
-import { and, asc, desc, eq, gt, lt, max } from "drizzle-orm";
+import { audit } from "@/lib/audit";
+import { and, asc, desc, eq, gt, inArray, lt, max } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 import { getDb } from "@/lib/db";
 import { categories, pages, projects, taskComments, tasks, tickets, users } from "@/lib/db/schema";
 import { requireRole } from "@/lib/auth";
 import { URGENCIES, URGENCY_META, appUrl, ticketCode, type Urgency } from "@/lib/constants";
-import { TASK_STATUSES, TASK_STATUS_META, formatShortDate, type ChecklistItem, type TaskStatus } from "@/lib/workspace/constants";
+import {
+  RECURRENCES,
+  TASK_STATUSES,
+  TASK_STATUS_META,
+  addDaysISO,
+  formatShortDate,
+  nextOccurrence,
+  type ChecklistItem,
+  type Recurrence,
+  type TaskStatus,
+} from "@/lib/workspace/constants";
 import { getTaskDetail, type TaskDetail } from "@/lib/workspace/queries";
+import { getTemplate } from "@/lib/workspace/templates";
 import { canManageTicket } from "@/lib/tickets/access";
 import { sendEmail } from "@/lib/email/send";
+import { sendPush } from "@/lib/push";
 import { renderTicketEmail } from "@/lib/email/template";
 import type { FormState } from "./auth";
 
@@ -39,18 +52,21 @@ export async function saveProjectAction(_: FormState, formData: FormData): Promi
   const db = await getDb();
   if (id) {
     await db.update(projects).set({ name, description, icon, color }).where(eq(projects.id, id));
+    await audit(me.id, "actualizar", "proyecto", id, `Proyecto actualizado: ${icon} ${name}`);
   } else {
     const [{ value }] = await db.select({ value: max(projects.sort) }).from(projects);
-    await db.insert(projects).values({ name, description, icon, color, sort: (value ?? 0) + 1, createdBy: me.id });
+    const [p] = await db.insert(projects).values({ name, description, icon, color, sort: (value ?? 0) + 1, createdBy: me.id }).returning();
+    await audit(me.id, "crear", "proyecto", p.id, `Proyecto creado: ${icon} ${name}`);
   }
   refreshWorkspace(id ?? undefined);
   return { error: null, ok: id ? "Proyecto actualizado." : "Proyecto creado." };
 }
 
 export async function archiveProjectAction(id: number, archived: boolean): Promise<Result> {
-  await requireRole("admin");
+  const me = await requireRole("admin");
   const db = await getDb();
-  await db.update(projects).set({ archived }).where(eq(projects.id, id));
+  const [p] = await db.update(projects).set({ archived }).where(eq(projects.id, id)).returning();
+  if (p) await audit(me.id, archived ? "archivar" : "restaurar", "proyecto", id, `Proyecto ${archived ? "archivado" : "restaurado"}: ${p.name}`);
   refreshWorkspace(id);
   return okr(null);
 }
@@ -88,6 +104,11 @@ async function notifyAssignment(taskId: number, actorId: number) {
     ctaUrl: appUrl(`/equipo/proyectos/${t.projectId}?tarea=${t.id}`),
   });
   await sendEmail({ kind: "task", to: [assignee.email], subject: `Tarea asignada: ${t.title}`, html, text });
+  await sendPush([t.assigneeId!], {
+    title: `Nueva tarea · ${detail.projectName}`,
+    body: `${actor?.name ?? ""}: ${t.title}`,
+    url: `/equipo/proyectos/${t.projectId}?tarea=${t.id}`,
+  });
 }
 
 function queue(fn: () => Promise<unknown>) {
@@ -97,6 +118,38 @@ function queue(fn: () => Promise<unknown>) {
   } catch {
     void task();
   }
+}
+
+/**
+ * Al completar una tarea recurrente se crea la siguiente, con las fechas corridas
+ * y el checklist reiniciado. La serie continúa en la nueva tarea.
+ */
+async function spawnNextOccurrence(taskId: number, actorId: number) {
+  const db = await getDb();
+  const [t] = await db.select().from(tasks).where(eq(tasks.id, taskId));
+  if (!t || t.recurrence === "none" || !t.dueDate) return null;
+  const due = nextOccurrence(t.dueDate, t.recurrence);
+  const start = t.startDate ? nextOccurrence(t.startDate, t.recurrence) : null;
+  const [next] = await db
+    .insert(tasks)
+    .values({
+      projectId: t.projectId,
+      title: t.title,
+      description: t.description,
+      priority: t.priority,
+      assigneeId: t.assigneeId,
+      tags: t.tags,
+      checklist: t.checklist.map((c) => ({ ...c, done: false })),
+      startDate: start,
+      dueDate: due,
+      recurrence: t.recurrence,
+      status: "por_hacer",
+      sort: await nextSort(t.projectId, "por_hacer"),
+      createdBy: actorId,
+    })
+    .returning();
+  await db.update(tasks).set({ recurrence: "none" }).where(eq(tasks.id, taskId));
+  return next;
 }
 
 async function nextSort(projectId: number, status: TaskStatus) {
@@ -153,6 +206,7 @@ export type TaskPatch = Partial<{
   tags: string[];
   checklist: ChecklistItem[];
   projectId: number;
+  recurrence: string;
 }>;
 
 export async function updateTaskAction(id: number, patch: TaskPatch): Promise<Result> {
@@ -203,6 +257,11 @@ export async function updateTaskAction(id: number, patch: TaskPatch): Promise<Re
       .map((c) => ({ id: String(c.id).slice(0, 40), text: String(c.text).slice(0, 300), done: Boolean(c.done) }))
       .filter((c) => c.text.trim());
   }
+  if (patch.recurrence !== undefined) {
+    if (!RECURRENCES.includes(patch.recurrence as Recurrence)) return fail("Repetición no válida.");
+    if (patch.recurrence !== "none" && !(patch.dueDate ?? task.dueDate)) return fail("Para repetir la tarea, primero ponle fecha de entrega.");
+    set.recurrence = patch.recurrence as Recurrence;
+  }
   if (patch.projectId !== undefined && patch.projectId !== task.projectId) {
     const [p] = await db.select().from(projects).where(eq(projects.id, patch.projectId));
     if (!p) return fail("Proyecto no válido.");
@@ -212,6 +271,7 @@ export async function updateTaskAction(id: number, patch: TaskPatch): Promise<Re
 
   await db.update(tasks).set(set).where(eq(tasks.id, id));
   if (set.assigneeId && set.assigneeId !== task.assigneeId) queue(() => notifyAssignment(id, me.id));
+  if (set.status === "hecho" && task.status !== "hecho") await spawnNextOccurrence(id, me.id);
   refreshWorkspace(task.projectId);
   if (set.projectId) refreshWorkspace(set.projectId);
   return okr(null);
@@ -219,7 +279,7 @@ export async function updateTaskAction(id: number, patch: TaskPatch): Promise<Re
 
 /** Mueve una tarea a una columna y la ubica entre dos tarjetas (orden fraccionario). */
 export async function moveTaskAction(id: number, status: string, beforeId: number | null, afterId: number | null): Promise<Result> {
-  await staff();
+  const me = await staff();
   if (!TASK_STATUSES.includes(status as TaskStatus)) return fail("Estado no válido.");
   const db = await getDb();
   const [task] = await db.select().from(tasks).where(eq(tasks.id, id));
@@ -259,6 +319,7 @@ export async function moveTaskAction(id: number, status: string, beforeId: numbe
       completedAt: status === "hecho" ? (task.completedAt ?? new Date()) : null,
     })
     .where(eq(tasks.id, id));
+  if (status === "hecho" && task.status !== "hecho") await spawnNextOccurrence(id, me.id);
   refreshWorkspace(task.projectId);
   return okr(null);
 }
@@ -270,6 +331,7 @@ export async function deleteTaskAction(id: number): Promise<Result> {
   if (!task) return okr(null);
   if (me.role !== "admin" && task.createdBy !== me.id) return fail("Solo quien creó la tarea o el líder puede eliminarla.");
   await db.delete(tasks).where(eq(tasks.id, id));
+  await audit(me.id, "eliminar", "tarea", id, `Tarea eliminada: ${task.title}`);
   refreshWorkspace(task.projectId);
   return okr(null);
 }
@@ -381,6 +443,59 @@ export async function deletePageAction(id: number): Promise<Result<{ parentId: n
   if (!page) return okr({ parentId: null });
   if (me.role !== "admin" && page.createdBy !== me.id) return fail("Solo quien creó la página o el líder puede eliminarla.");
   await db.delete(pages).where(eq(pages.id, id));
+  await audit(me.id, "eliminar", "pagina", id, `Página eliminada: ${page.icon} ${page.title}`);
   revalidatePath("/equipo", "layout");
   return okr({ parentId: page.parentId });
+}
+
+// ── Plantillas de campaña ──────────────────────────────────
+
+/** Responsables por rol de plantilla (según los responsables de cada categoría). */
+export async function templateAssigneesAction(): Promise<Record<string, { id: number; name: string } | null>> {
+  const me = await staff();
+  const db = await getDb();
+  const rows = await db
+    .select({ slug: categories.slug, id: users.id, name: users.name })
+    .from(categories)
+    .leftJoin(users, eq(users.id, categories.responsibleId))
+    .where(inArray(categories.slug, ["diseno", "redes", "crm", "ia"]));
+  const map: Record<string, { id: number; name: string } | null> = { lider: { id: me.id, name: me.name } };
+  for (const r of rows) map[r.slug] = r.id && r.name ? { id: r.id, name: r.name } : null;
+  return map;
+}
+
+export async function applyTemplateAction(input: { projectId: number; templateId: string; keyDate: string; prefix?: string }): Promise<Result<{ created: number }>> {
+  const me = await staff();
+  const template = getTemplate(input.templateId);
+  if (!template) return fail("Plantilla no válida.");
+  if (!DATE_RE.test(input.keyDate)) return fail(`Indica la ${template.keyDateLabel.toLowerCase()}.`);
+  const db = await getDb();
+  const [project] = await db.select().from(projects).where(eq(projects.id, input.projectId));
+  if (!project) return fail("El proyecto no existe.");
+  const assignees = await templateAssigneesAction();
+  const prefix = input.prefix?.trim();
+  let sort = await nextSort(project.id, "por_hacer");
+  const createdIds: number[] = [];
+  for (const t of template.tasks) {
+    const [task] = await db
+      .insert(tasks)
+      .values({
+        projectId: project.id,
+        title: (prefix ? `${prefix} · ${t.title}` : t.title).slice(0, 200),
+        description: t.description ?? `Creada con la plantilla **${template.name}** (${template.keyDateLabel.toLowerCase()}: ${formatShortDate(input.keyDate)}).`,
+        priority: t.priority ?? "media",
+        assigneeId: assignees[t.role]?.id ?? null,
+        dueDate: addDaysISO(input.keyDate, t.offset),
+        tags: t.tags ?? [],
+        checklist: (t.checklist ?? []).map((text) => ({ id: crypto.randomUUID(), text, done: false })),
+        sort: (sort += 1024),
+        createdBy: me.id,
+      })
+      .returning({ id: tasks.id, assigneeId: tasks.assigneeId });
+    createdIds.push(task.id);
+    if (task.assigneeId && task.assigneeId !== me.id) queue(() => notifyAssignment(task.id, me.id));
+  }
+  await audit(me.id, "aplicar", "plantilla", template.id, `Plantilla "${template.name}" aplicada en ${project.name}${prefix ? ` (${prefix})` : ""}: ${createdIds.length} tareas`);
+  refreshWorkspace(project.id);
+  return okr({ created: createdIds.length });
 }

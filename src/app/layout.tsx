@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -17,8 +17,12 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: { default: `${APP_NAME} ACF`, template: `%s · ${APP_NAME} ACF` },
-  description: `Mesa de ayuda interna de ${ORG_NAME}: solicitudes de Diseño, IA, Cotizador, Redes sociales, Sistemas y Sinco Soft.`,
+  description: `Mesa de ayuda interna de ${ORG_NAME}: solicitudes de Diseño, IA, Cotizador, CRM, Redes sociales, Sistemas y Sinco Soft.`,
+  appleWebApp: { capable: true, title: "Mesa ACF", statusBarStyle: "black-translucent" },
+  icons: { apple: "/apple-touch-icon.png" },
 };
+
+export const viewport: Viewport = { themeColor: "#19191b" };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

@@ -4,6 +4,9 @@ import { isStaff, requireUser } from "@/lib/auth";
 import { unreadTotal } from "@/lib/chat/service";
 import { getAlerts } from "@/lib/alerts";
 import { AlertsButton } from "@/components/shared/alerts-button";
+import { CaptureButton } from "@/components/followups/capture-button";
+import { getStaff } from "@/lib/tickets/queries";
+import { projectOptions } from "@/lib/followups/service";
 import { SessionProvider } from "@/components/shared/session-provider";
 import { AppSidebar, AppSidebarMobile } from "@/components/shared/app-sidebar";
 import { Button } from "@/components/ui/button";
@@ -12,6 +15,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const user = await requireUser();
   const unreadChat = isStaff(user) ? await unreadTotal(user).catch(() => 0) : 0;
   // Si las alertas fallan, la barra superior no debe tumbar toda la app (igual que en el cotizador).
+  const [team, teamProjects] = isStaff(user) ? await Promise.all([getStaff(), projectOptions()]) : [[], []];
   const alerts = await getAlerts(user).catch((error) => {
     console.error("No se pudieron cargar las alertas:", error);
     return { alerts: [], total: 0, overdue: 0 };
@@ -31,6 +35,13 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               Mesa de Ayuda <span className="text-[#ff5a50]">ACF</span>
             </p>
             <div className="ml-auto flex items-center gap-2">
+              {isStaff(user) && (
+                <CaptureButton
+                  members={team.filter((t) => t.id !== user.id).map((t) => ({ id: t.id, name: t.name }))}
+                  projects={teamProjects}
+                  className="border-white/20 bg-white/10 text-white hover:bg-white/20 hover:text-white"
+                />
+              )}
               <AlertsButton initial={alerts} className="border-white/20 bg-white/10 text-white hover:bg-white/20 hover:text-white" />
               <Button
                 size="sm"

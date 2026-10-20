@@ -12,6 +12,41 @@ export const TASK_STATUS_META: Record<TaskStatus, { label: string; variant: Badg
 
 export type ChecklistItem = { id: string; text: string; done: boolean };
 
+export const RECURRENCES = ["none", "weekdays", "weekly", "biweekly", "monthly"] as const;
+export type Recurrence = (typeof RECURRENCES)[number];
+export const RECURRENCE_LABELS: Record<Recurrence, string> = {
+  none: "No se repite",
+  weekdays: "Cada día hábil",
+  weekly: "Cada semana",
+  biweekly: "Cada 2 semanas",
+  monthly: "Cada mes",
+};
+
+/** Siguiente fecha de una tarea recurrente (AAAA-MM-DD). */
+export function nextOccurrence(iso: string, rec: Recurrence): string {
+  const d = new Date(`${iso}T00:00:00Z`);
+  if (rec === "weekdays") {
+    do d.setUTCDate(d.getUTCDate() + 1);
+    while (d.getUTCDay() === 0 || d.getUTCDay() === 6);
+  } else if (rec === "weekly") d.setUTCDate(d.getUTCDate() + 7);
+  else if (rec === "biweekly") d.setUTCDate(d.getUTCDate() + 14);
+  else if (rec === "monthly") {
+    const day = d.getUTCDate();
+    d.setUTCDate(1);
+    d.setUTCMonth(d.getUTCMonth() + 1);
+    const last = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0)).getUTCDate();
+    d.setUTCDate(Math.min(day, last));
+  }
+  return d.toISOString().slice(0, 10);
+}
+
+/** Suma (o resta) días a una fecha AAAA-MM-DD. */
+export function addDaysISO(iso: string, days: number) {
+  const d = new Date(`${iso}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
 /** Canales sugeridos para etiquetar tareas de marketing digital y generación de demanda. */
 export const CHANNEL_TAGS = [
   "Instagram",

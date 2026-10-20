@@ -12,6 +12,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 
 // Mismo panel de alertas del cotizador, con las categorías de la mesa de ayuda.
 const CATEGORY_LABEL: Record<AlertCategory, string> = {
+  seguimientos: "Mis seguimientos",
   solicitudes: "Solicitudes por resolver",
   tareas: "Tareas del equipo",
   equipo: "Equipo (vista de líder)",
@@ -19,7 +20,7 @@ const CATEGORY_LABEL: Record<AlertCategory, string> = {
   mis_solicitudes: "Mis solicitudes",
 };
 
-const ORDEN_CATEGORIAS: AlertCategory[] = ["solicitudes", "tareas", "equipo", "chat", "mis_solicitudes"];
+const ORDEN_CATEGORIAS: AlertCategory[] = ["seguimientos", "solicitudes", "tareas", "equipo", "chat", "mis_solicitudes"];
 const POLL_MS = 60_000;
 
 export function AlertsButton({ initial, className }: { initial: AlertsResult; className?: string }) {

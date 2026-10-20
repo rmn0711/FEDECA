@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { SESSION_COOKIE, verifySession } from "@/lib/auth/session";
 
 // Rutas que no requieren sesión.
-const PUBLIC_PATHS = ["/login", "/registro", "/recuperar", "/api/inbound-email", "/api/cron"];
+const PUBLIC_PATHS = ["/login", "/registro", "/recuperar", "/api/inbound-email", "/api/cron", "/acceso"];
 
 export async function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
@@ -21,5 +21,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|icon.svg|logo-acf.svg|logo-acf-pdf.png|robots.txt).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|icon.svg|logo-acf.svg|logo-acf-pdf.png|robots.txt|sw.js|manifest.webmanifest|icon-192.png|icon-512.png|apple-touch-icon.png|badge-96.png).*)"],
 };

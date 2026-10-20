@@ -1,6 +1,8 @@
 import { requireUser } from "@/lib/auth";
 import { ROLE_LABELS } from "@/lib/constants";
 import { ProfileForms } from "@/components/profile/profile-forms";
+import { PushSettings } from "@/components/shared/push-toggle";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export const metadata = { title: "Mi perfil" };
 
@@ -15,6 +17,15 @@ export default async function ProfilePage() {
         </p>
       </div>
       <ProfileForms name={user.name} department={user.department ?? ""} phone={user.phone ?? ""} />
+      <Card>
+        <CardHeader>
+          <CardTitle>Notificaciones en este dispositivo</CardTitle>
+          <CardDescription>Recibe avisos en el celular o el computador aunque la plataforma esté cerrada.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <PushSettings />
+        </CardContent>
+      </Card>
     </div>
   );
 }

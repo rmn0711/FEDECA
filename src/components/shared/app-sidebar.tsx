@@ -5,6 +5,8 @@ import Image from "next/image";
 import { useEffect, useState, useTransition } from "react";
 import { usePathname } from "next/navigation";
 import {
+  BellPlus,
+  BookOpen,
   CalendarDays,
   FolderKanban,
   ListTodo,
@@ -19,6 +21,7 @@ import {
   PanelLeftOpen,
   PlusCircle,
   Settings,
+  ShieldCheck,
   Tags,
   Timer,
   UserRound,
@@ -50,6 +53,7 @@ function buildGroups({ isAdmin, isStaff }: { isAdmin: boolean; isStaff: boolean 
         { href: "/dashboard", label: "Inicio", icon: LayoutDashboard },
         { href: "/solicitudes/nueva", label: "Nueva solicitud", icon: PlusCircle },
         { href: "/solicitudes", label: isStaff ? "Solicitudes" : "Mis solicitudes", icon: FolderKanban },
+        { href: "/ayuda", label: "Base de conocimiento", icon: BookOpen },
         { href: "/tiempos-de-respuesta", label: "Prioridades y tiempos", icon: Timer },
       ],
     },
@@ -61,6 +65,7 @@ function buildGroups({ isAdmin, isStaff }: { isAdmin: boolean; isStaff: boolean 
         { href: "/equipo", label: "Espacio de equipo", icon: Users2 },
         { href: "/chat", label: "Chat", icon: MessagesSquare },
         { href: "/equipo/pipeline", label: "Mi pipeline", icon: ListTodo },
+        { href: "/equipo/seguimientos", label: "Seguimientos", icon: BellPlus },
         { href: "/equipo/calendario", label: "Calendario", icon: CalendarDays },
         { href: "/equipo/paginas", label: "Páginas", icon: NotebookText },
       ],
@@ -74,6 +79,7 @@ function buildGroups({ isAdmin, isStaff }: { isAdmin: boolean; isStaff: boolean 
         { href: "/admin/usuarios", label: "Usuarios", icon: Users },
         { href: "/admin/correos", label: "Registro de correos", icon: Mail },
         { href: "/admin/configuracion", label: "Notificaciones", icon: Settings },
+        { href: "/admin/auditoria", label: "Auditoría", icon: ShieldCheck },
       ],
     });
   }

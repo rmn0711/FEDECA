@@ -9,6 +9,7 @@ import { CATEGORIES } from "@/lib/categories";
 import { seedDefaultTeam } from "./team";
 import { seedWorkspace } from "./workspace-seed";
 import { seedChat } from "./chat-seed";
+import { seedKnowledgeBase } from "./kb-seed";
 
 export type DB = PostgresJsDatabase<typeof schema>;
 
@@ -61,6 +62,7 @@ async function seed(db: DB) {
   await seedDefaultTeam(db);
   await seedWorkspace(db);
   await seedChat(db);
+  await seedKnowledgeBase(db);
 }
 
 async function createInitialUsers(db: DB) {

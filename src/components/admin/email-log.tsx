@@ -41,6 +41,9 @@ const KIND_LABELS: Record<string, string> = {
   test: "Prueba",
   task: "Tarea asignada",
   digest: "Resumen diario",
+  access: "Enlace de acceso",
+  review: "Aprobación de pieza",
+  reminder: "Recordatorio",
 };
 
 const initialState: FormState = { error: null };

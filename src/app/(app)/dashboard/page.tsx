@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CategoryIcon, PriorityBadge, SlaBadge, StatusBadge } from "@/components/tickets/badges";
 import { EmptyState } from "@/components/ui/empty-state";
+import { PushBanner } from "@/components/shared/push-toggle";
 
 export const metadata = { title: "Inicio" };
 
@@ -48,6 +49,7 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6">
+      <PushBanner />
       <Card className="relative overflow-hidden border-none bg-gradient-to-br from-[#242426] via-[#1b1b1d] to-[#141415] text-white shadow-lg">
         <div className="pointer-events-none absolute -top-24 -right-24 size-72 rounded-full bg-[#d9342c] opacity-25 blur-3xl" />
         <div className="pointer-events-none absolute -bottom-32 -left-16 size-64 rounded-full bg-white opacity-[0.04] blur-3xl" />

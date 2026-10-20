@@ -1,6 +1,6 @@
-import { boolean, customType, doublePrecision, integer, jsonb, pgTable, primaryKey, serial, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { boolean, customType, doublePrecision, integer, jsonb, pgTable, primaryKey, real, serial, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import type { Role, Status, Urgency } from "@/lib/constants";
-import type { ChecklistItem, TaskStatus } from "@/lib/workspace/constants";
+import type { ChecklistItem, Recurrence, TaskStatus } from "@/lib/workspace/constants";
 
 const bytea = customType<{ data: Uint8Array; driverData: Uint8Array }>({
   dataType: () => "bytea",
@@ -19,6 +19,8 @@ export const users = pgTable("hd_users", {
   active: boolean("active").notNull().default(true),
   createdAt: ts("created_at").notNull().defaultNow(),
   lastLoginAt: ts("last_login_at"),
+  /** Enlace personal de acceso: /acceso/<token> (la persona solo digita su contraseña) */
+  accessToken: text("access_token").unique(),
 });
 
 export const categories = pgTable("hd_categories", {
@@ -147,6 +149,8 @@ export const tasks = pgTable("hd_tasks", {
   tags: jsonb("tags").$type<string[]>().notNull().default([]),
   checklist: jsonb("checklist").$type<ChecklistItem[]>().notNull().default([]),
   sort: doublePrecision("sort").notNull().default(0),
+  /** none | weekdays | weekly | biweekly | monthly */
+  recurrence: text("recurrence").$type<Recurrence>().notNull().default("none"),
   ticketId: integer("ticket_id").references(() => tickets.id, { onDelete: "set null" }),
   createdBy: integer("created_by").references(() => users.id, { onDelete: "set null" }),
   createdAt: ts("created_at").notNull().defaultNow(),
@@ -249,6 +253,99 @@ export const messageFiles = pgTable("hd_message_files", {
   mime: text("mime").notNull(),
   size: integer("size").notNull(),
   data: bytea("data").notNull(),
+});
+
+export const auditLog = pgTable("hd_audit_log", {
+  id: serial("id").primaryKey(),
+  actorId: integer("actor_id").references(() => users.id, { onDelete: "set null" }),
+  action: text("action").notNull(),
+  entity: text("entity").notNull(),
+  entityId: text("entity_id"),
+  summary: text("summary").notNull(),
+  meta: jsonb("meta").$type<Record<string, unknown>>().notNull().default({}),
+  ip: text("ip"),
+  createdAt: ts("created_at").notNull().defaultNow(),
+});
+
+export const kbArticles = pgTable("hd_kb_articles", {
+  id: serial("id").primaryKey(),
+  categorySlug: text("category_slug").references(() => categories.slug, { onDelete: "set null" }),
+  title: text("title").notNull(),
+  summary: text("summary"),
+  body: text("body").notNull().default(""),
+  keywords: text("keywords"),
+  published: boolean("published").notNull().default(true),
+  views: integer("views").notNull().default(0),
+  helpful: integer("helpful").notNull().default(0),
+  notHelpful: integer("not_helpful").notNull().default(0),
+  /** Veces que el artículo resolvió el problema y evitó crear una solicitud */
+  deflections: integer("deflections").notNull().default(0),
+  createdBy: integer("created_by").references(() => users.id, { onDelete: "set null" }),
+  updatedBy: integer("updated_by").references(() => users.id, { onDelete: "set null" }),
+  createdAt: ts("created_at").notNull().defaultNow(),
+  updatedAt: ts("updated_at").notNull().defaultNow(),
+});
+
+export const reviews = pgTable("hd_reviews", {
+  id: serial("id").primaryKey(),
+  taskId: integer("task_id")
+    .notNull()
+    .references(() => tasks.id, { onDelete: "cascade" }),
+  version: integer("version").notNull(),
+  note: text("note"),
+  status: text("status").$type<"pendiente" | "aprobada" | "cambios">().notNull().default("pendiente"),
+  filename: text("filename").notNull(),
+  mime: text("mime").notNull(),
+  size: integer("size").notNull(),
+  data: bytea("data").notNull(),
+  submittedBy: integer("submitted_by").references(() => users.id, { onDelete: "set null" }),
+  submittedAt: ts("submitted_at").notNull().defaultNow(),
+  decidedBy: integer("decided_by").references(() => users.id, { onDelete: "set null" }),
+  decidedAt: ts("decided_at"),
+  decisionComment: text("decision_comment"),
+});
+
+export const reviewComments = pgTable("hd_review_comments", {
+  id: serial("id").primaryKey(),
+  reviewId: integer("review_id")
+    .notNull()
+    .references(() => reviews.id, { onDelete: "cascade" }),
+  authorId: integer("author_id").references(() => users.id, { onDelete: "set null" }),
+  body: text("body").notNull(),
+  /** Posición del comentario sobre la imagen, en % (null = comentario general) */
+  x: real("x"),
+  y: real("y"),
+  resolved: boolean("resolved").notNull().default(false),
+  createdAt: ts("created_at").notNull().defaultNow(),
+});
+
+export const pushSubscriptions = pgTable("hd_push_subscriptions", {
+  endpoint: text("endpoint").primaryKey(),
+  userId: integer("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  p256dh: text("p256dh").notNull(),
+  auth: text("auth").notNull(),
+  userAgent: text("user_agent"),
+  createdAt: ts("created_at").notNull().defaultNow(),
+});
+
+export const followups = pgTable("hd_followups", {
+  id: serial("id").primaryKey(),
+  ownerId: integer("owner_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  notes: text("notes"),
+  remindAt: ts("remind_at"),
+  status: text("status").$type<"pendiente" | "hecho">().notNull().default("pendiente"),
+  /** Persona a la que se le hace seguimiento (opcional) */
+  personId: integer("person_id").references(() => users.id, { onDelete: "set null" }),
+  ticketId: integer("ticket_id").references(() => tickets.id, { onDelete: "set null" }),
+  taskId: integer("task_id").references(() => tasks.id, { onDelete: "set null" }),
+  notifiedAt: ts("notified_at"),
+  doneAt: ts("done_at"),
+  createdAt: ts("created_at").notNull().defaultNow(),
 });
 
 export type User = typeof users.$inferSelect;

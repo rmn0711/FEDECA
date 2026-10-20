@@ -20,6 +20,7 @@ const taskColumns = {
   tags: tasks.tags,
   checklist: tasks.checklist,
   sort: tasks.sort,
+  recurrence: tasks.recurrence,
   ticketId: tasks.ticketId,
   updatedAt: tasks.updatedAt,
   hasDescription: sql<boolean>`length(${tasks.description}) > 0`,
@@ -39,6 +40,7 @@ export type TaskCard = {
   tags: string[];
   checklist: { id: string; text: string; done: boolean }[];
   sort: number;
+  recurrence: "none" | "weekdays" | "weekly" | "biweekly" | "monthly";
   ticketId: number | null;
   updatedAt: Date;
   hasDescription: boolean;

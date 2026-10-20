@@ -1,13 +1,13 @@
 import "server-only";
 import { and, eq, inArray, isNull, ne, or, sql } from "drizzle-orm";
 import { getDb } from "@/lib/db";
-import { categories, tasks, tickets, projects } from "@/lib/db/schema";
+import { categories, followups, tasks, tickets, projects } from "@/lib/db/schema";
 import { OPEN_STATUSES, URGENCY_META, ticketCode, type Role } from "@/lib/constants";
 import { unreadTotal } from "@/lib/chat/service";
 import { todayISO } from "@/lib/workspace/constants";
 import { relativeTime } from "@/lib/format";
 
-export type AlertCategory = "solicitudes" | "mis_solicitudes" | "tareas" | "chat" | "equipo";
+export type AlertCategory = "seguimientos" | "solicitudes" | "mis_solicitudes" | "tareas" | "chat" | "equipo";
 export type AlertSeverity = "overdue" | "today" | "review";
 
 export type Alert = {
@@ -40,6 +40,27 @@ export async function getAlerts(user: Actor): Promise<AlertsResult> {
   const staff = user.role === "admin" || user.role === "agent";
 
   if (staff) {
+    // Mis seguimientos: vencidos, para hoy y por avisar.
+    const todayStr = todayISO();
+    const endOfToday = new Date(`${todayStr}T23:59:59-05:00`);
+    const myFollowups = await db
+      .select({ id: followups.id, title: followups.title, remindAt: followups.remindAt })
+      .from(followups)
+      .where(and(eq(followups.ownerId, user.id), eq(followups.status, "pendiente"), sql`${followups.remindAt} <= ${endOfToday}`));
+    for (const f of myFollowups) {
+      const at = f.remindAt!;
+      const passed = at <= now;
+      const late = passed && now.getTime() - at.getTime() > 12 * 3_600_000;
+      alerts.push({
+        id: `f-${f.id}`,
+        category: "seguimientos",
+        severity: late ? "overdue" : passed ? "today" : "review",
+        title: f.title,
+        detail: passed ? `Seguimiento ${late ? "vencido" : "pendiente"} desde ${relativeTime(at)}` : `Hoy ${relativeTime(at)}`,
+        href: "/equipo/seguimientos",
+      });
+    }
+
     // Solicitudes del helpdesk a mi cargo.
     const owned = await db
       .select({

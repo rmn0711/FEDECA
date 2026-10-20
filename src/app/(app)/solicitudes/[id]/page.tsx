@@ -17,6 +17,8 @@ import { ManagePanel, RequesterPanel } from "@/components/tickets/manage-panel";
 import { RatingCard } from "@/components/tickets/rating-card";
 import { CreatedToast } from "@/components/tickets/created-toast";
 import { ConvertToTask } from "@/components/workspace/convert-to-task";
+import { CaptureButton } from "@/components/followups/capture-button";
+import { projectOptions } from "@/lib/followups/service";
 import { getProjects, getTaskForTicket } from "@/lib/workspace/queries";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
@@ -137,6 +139,16 @@ export default async function TicketPage({
             />
           )}
           {isRequester && !canManage && <RequesterPanel ticketId={ticket.id} status={ticket.status} />}
+          {canManage && (
+            <CaptureButton
+              members={staff.filter((s) => s.id !== user.id).map((s) => ({ id: s.id, name: s.name }))}
+              projects={await projectOptions()}
+              ticketId={ticket.id}
+              initialText={`Hacer seguimiento a ${ticketCode(ticket.id)} (${ticket.title}) mañana a las 9am`}
+              label="Recordarme hacer seguimiento"
+              className="w-full"
+            />
+          )}
           {canManage && (
             <ConvertToTask
               ticketId={ticket.id}

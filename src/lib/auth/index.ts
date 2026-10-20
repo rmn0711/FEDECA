@@ -8,7 +8,7 @@ import { users, type User } from "@/lib/db/schema";
 import type { Role } from "@/lib/constants";
 import { SESSION_COOKIE, SESSION_DAYS, signSession, verifySession } from "./session";
 
-export type SessionUser = Omit<User, "passwordHash">;
+export type SessionUser = Omit<User, "passwordHash" | "accessToken">;
 
 export async function startSession(userId: number) {
   const token = await signSession(userId);
@@ -33,7 +33,7 @@ export const getCurrentUser = cache(async (): Promise<SessionUser | null> => {
   const [user] = await db.select().from(users).where(eq(users.id, userId)).limit(1);
   if (!user || !user.active) return null;
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { passwordHash, ...rest } = user;
+  const { passwordHash, accessToken, ...rest } = user;
   return rest;
 });
 

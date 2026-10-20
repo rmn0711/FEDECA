@@ -355,6 +355,7 @@ export async function getUsersList() {
       active: users.active,
       createdAt: users.createdAt,
       lastLoginAt: users.lastLoginAt,
+      hasPassword: sql<boolean>`${users.passwordHash} <> ''`,
       tickets: sql<number>`coalesce(${open.n}, 0)`,
     })
     .from(users)

@@ -7,6 +7,8 @@ import { categories, settings, tickets, users } from "@/lib/db/schema";
 import { getCategory, formatFieldValue } from "@/lib/categories";
 import { STATUS_META, URGENCY_META, appUrl, ticketCode, type Status, type Urgency } from "@/lib/constants";
 import { sendEmail } from "@/lib/email/send";
+import { sendPush } from "@/lib/push";
+import { inArray } from "drizzle-orm";
 import { renderTicketEmail, type EmailPill } from "@/lib/email/template";
 import { formatDateTime } from "@/lib/format";
 
@@ -90,7 +92,51 @@ async function userName(id: number) {
   return u?.name ?? "Usuario";
 }
 
+/** Push a los dispositivos de las personas involucradas (no al autor del evento). */
+async function pushFor(ticketId: number, event: NotificationEvent) {
+  const ctx = await loadContext(ticketId);
+  if (!ctx) return;
+  const t = ctx.ticket;
+  const code = ticketCode(t.id);
+  const url = `/solicitudes/${t.id}`;
+  const ownerId = ctx.assignee?.id ?? ctx.responsible?.id ?? null;
+  const db = await getDb();
+  const admins = (await db.select({ id: users.id }).from(users).where(inArray(users.role, ["admin"]))).map((a) => a.id);
+  const authorId = "authorId" in event ? event.authorId : null;
+  let ids: number[] = [];
+  let title = "";
+  let body = t.title;
+  switch (event.kind) {
+    case "created":
+      ids = [ownerId, ...admins].filter((v): v is number => Boolean(v) && v !== t.requesterId);
+      title = `Nueva solicitud ${code} · ${URGENCY_META[t.urgency].label}`;
+      body = `${ctx.requester.name}: ${t.title}`;
+      break;
+    case "comment":
+      ids = event.authorId === t.requesterId ? [ownerId].filter((v): v is number => Boolean(v)) : [t.requesterId];
+      title = `Respuesta en ${code}`;
+      body = event.body.slice(0, 140);
+      break;
+    case "status":
+      ids = [t.requesterId];
+      title = `${code}: ${STATUS_META[event.to].label}`;
+      break;
+    case "assign":
+      ids = ctx.assignee ? [ctx.assignee.id] : [];
+      title = `Te asignaron ${code}`;
+      break;
+    case "rating":
+      ids = [ownerId].filter((v): v is number => Boolean(v));
+      title = `Calificación ${"★".repeat(event.rating)} en ${code}`;
+      break;
+    default:
+      return;
+  }
+  await sendPush(ids.filter((id) => id !== authorId), { title, body, url });
+}
+
 async function notify(ticketId: number, event: NotificationEvent) {
+  await pushFor(ticketId, event).catch((e) => console.error("[mesa-de-ayuda] Error en push de solicitud:", e));
   const ctx = await loadContext(ticketId);
   if (!ctx) return;
   const { ticket, category, requester } = ctx;

@@ -1,4 +1,5 @@
 import "server-only";
+import { audit } from "@/lib/audit";
 import { and, eq } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { attachments, categories, ticketEvents, tickets, users } from "@/lib/db/schema";
@@ -295,6 +296,7 @@ export async function assignTicket(user: Actor, ticketId: number, assigneeId: nu
     meta: { assigneeId, assigneeName },
   });
   if (assigneeId !== null) queueNotification(ticketId, { kind: "assign", authorId: user.id });
+  await audit(user.id, "reasignar", "solicitud", ticketId, `Solicitud #${ticketId} asignada a ${assigneeName ?? "nadie"}`);
 }
 
 export async function changeUrgency(user: Actor, ticketId: number, urgency: string) {

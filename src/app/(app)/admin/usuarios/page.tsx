@@ -17,7 +17,7 @@ export default async function UsersAdminPage() {
       </div>
       <UsersManager
         meId={me.id}
-        users={users.map((u) => ({ ...u, createdAt: u.createdAt.toISOString(), lastLoginAt: u.lastLoginAt?.toISOString() ?? null }))}
+        users={users.map((u) => ({ ...u, hasPassword: Boolean(u.hasPassword), createdAt: u.createdAt.toISOString(), lastLoginAt: u.lastLoginAt?.toISOString() ?? null }))}
       />
     </div>
   );

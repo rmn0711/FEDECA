@@ -1,9 +1,15 @@
 "use client";
 
 import { useActionState, useEffect, useMemo, useState, useTransition } from "react";
-import { Pencil, Search, UserPlus, Users } from "lucide-react";
+import { Copy, Link2, Mail, Pencil, RefreshCw, Search, Send, UserPlus, Users } from "lucide-react";
 import { toast } from "sonner";
-import { saveUserAction } from "@/lib/actions/admin";
+import {
+  getAccessLinkAction,
+  regenerateAccessLinkAction,
+  saveUserAction,
+  sendAccessLinkAction,
+  sendAccessLinksToNewRequestersAction,
+} from "@/lib/actions/admin";
 import type { FormState } from "@/lib/actions/auth";
 import { ROLES, ROLE_LABELS, type Role } from "@/lib/constants";
 import { formatDate, relativeTime } from "@/lib/format";
@@ -28,6 +34,7 @@ type UserRow = {
   active: boolean;
   createdAt: string;
   lastLoginAt: string | null;
+  hasPassword: boolean;
   tickets: number;
 };
 
@@ -113,13 +120,13 @@ function UserDialog({ user, open, onClose, meId }: { user: UserRow | null; open:
               <Input id="u-phone" name="phone" defaultValue={user?.phone ?? ""} />
             </div>
             <div className="space-y-1.5 sm:col-span-2">
-              <Label htmlFor="u-pass">{user ? "Nueva contraseña (dejar vacío para no cambiar)" : "Contraseña temporal *"}</Label>
-              <Input id="u-pass" name="password" type="text" autoComplete="new-password" required={!user} placeholder="Mínimo 8 caracteres, letras y números" />
+              <Label htmlFor="u-pass">{user ? "Nueva contraseña (dejar vacío para no cambiar)" : "Contraseña temporal (opcional)"}</Label>
+              <Input id="u-pass" name="password" type="text" autoComplete="new-password" placeholder={user ? "Mínimo 8 caracteres, letras y números" : "Vacío: la persona la crea con su enlace"} />
             </div>
             {!user && (
               <label className="flex items-center gap-2 text-sm sm:col-span-2">
                 <input type="checkbox" name="sendWelcome" defaultChecked className="size-4 accent-[#d9342c]" />
-                Enviar correo de bienvenida con el acceso
+                Enviar por correo su enlace personal de acceso
               </label>
             )}
           </div>
@@ -137,11 +144,84 @@ function UserDialog({ user, open, onClose, meId }: { user: UserRow | null; open:
   );
 }
 
+/** Enlace personal: la persona lo abre y solo escribe su contraseña. */
+function AccessLinkDialog({ user, onClose }: { user: UserRow | null; onClose: () => void }) {
+  const [link, setLink] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setLink(null);
+    if (user) getAccessLinkAction(user.id).then(setLink);
+  }, [user]);
+  return (
+    <Dialog open={user !== null} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Enlace de acceso de {user?.name}</DialogTitle>
+          <DialogDescription>
+            Con este enlace la persona solo escribe su contraseña{user && !user.hasPassword ? " (la primera vez la crea)" : ""} para radicar, consultar y responder solicitudes.
+            Es personal: no lo compartas en grupos.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="flex gap-2">
+          <Input readOnly value={link ?? "Generando…"} onFocus={(e) => e.currentTarget.select()} className="font-mono text-xs" />
+          <Button
+            variant="outline"
+            size="icon"
+            aria-label="Copiar enlace"
+            disabled={!link}
+            onClick={() => link && navigator.clipboard.writeText(link).then(() => toast.success("Enlace copiado."))}
+          >
+            <Copy className="size-4" />
+          </Button>
+        </div>
+        <DialogFooter className="sm:justify-between">
+          <Button
+            variant="ghost"
+            disabled={pending || !user}
+            onClick={() =>
+              user &&
+              confirm("¿Generar un enlace nuevo? El anterior dejará de funcionar.") &&
+              startTransition(async () => {
+                const r = await regenerateAccessLinkAction(user.id);
+                if (!r.ok) return void toast.error(r.error);
+                setLink(r.data);
+                toast.success("Enlace regenerado.");
+              })
+            }
+          >
+            <RefreshCw className="size-4" />
+            Regenerar
+          </Button>
+          <Button
+            disabled={pending || !user}
+            onClick={() =>
+              user &&
+              startTransition(async () => {
+                const r = await sendAccessLinkAction(user.id);
+                if (!r.ok) return void toast.error(r.error);
+                toast.success(`Enlace enviado a ${user.email}.`);
+                onClose();
+              })
+            }
+          >
+            <Mail className="size-4" />
+            Enviar por correo
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export function UsersManager({ users, meId }: { users: UserRow[]; meId: number }) {
   const [search, setSearch] = useState("");
   const [role, setRole] = useState<string>("all");
   const [editing, setEditing] = useState<UserRow | null>(null);
   const [open, setOpen] = useState(false);
+  const [linkUser, setLinkUser] = useState<UserRow | null>(null);
+  const [bulkPending, startBulk] = useTransition();
+  const neverIn = users.filter((u) => u.role === "user" && u.active && !u.lastLoginAt).length;
 
   const filtered = useMemo(() => {
     const s = search.toLowerCase();
@@ -173,8 +253,25 @@ export function UsersManager({ users, meId }: { users: UserRow[]; meId: number }
               ))}
             </SelectContent>
           </Select>
+          {neverIn > 0 && (
+            <Button
+              variant="outline"
+              className="ml-auto"
+              disabled={bulkPending}
+              onClick={() =>
+                confirm(`¿Enviar su enlace de acceso a ${neverIn} solicitante(s) que nunca han ingresado?`) &&
+                startBulk(async () => {
+                  const r = await sendAccessLinksToNewRequestersAction();
+                  toast.success(`Enlace enviado a ${r.data} persona(s).`);
+                })
+              }
+            >
+              <Send className="size-4" />
+              Enviar enlaces ({neverIn})
+            </Button>
+          )}
           <Button
-            className="ml-auto"
+            className={neverIn > 0 ? "" : "ml-auto"}
             onClick={() => {
               setEditing(null);
               setOpen(true);
@@ -195,7 +292,7 @@ export function UsersManager({ users, meId }: { users: UserRow[]; meId: number }
               <TableHead className="hidden md:table-cell">Área</TableHead>
               <TableHead className="hidden md:table-cell">Solicitudes</TableHead>
               <TableHead className="hidden lg:table-cell">Último ingreso</TableHead>
-              <TableHead className="w-10" />
+              <TableHead className="w-20" />
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -226,8 +323,12 @@ export function UsersManager({ users, meId }: { users: UserRow[]; meId: number }
                   <TableCell className="hidden tabular-nums md:table-cell">{u.tickets}</TableCell>
                   <TableCell className="hidden text-muted-foreground lg:table-cell" title={`Creado ${formatDate(u.createdAt)}`}>
                     {u.lastLoginAt ? relativeTime(u.lastLoginAt) : "Nunca"}
+                    {!u.hasPassword && <Badge variant="warning" className="ml-1">Sin contraseña</Badge>}
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="flex gap-0.5">
+                    <Button variant="ghost" size="icon" aria-label={`Enlace de acceso de ${u.name}`} title="Enlace de acceso" onClick={() => setLinkUser(u)}>
+                      <Link2 className="size-4" />
+                    </Button>
                     <Button
                       variant="ghost"
                       size="icon"
@@ -247,6 +348,7 @@ export function UsersManager({ users, meId }: { users: UserRow[]; meId: number }
         </Table>
       </div>
       <UserDialog user={editing} open={open} onClose={() => setOpen(false)} meId={meId} />
+      <AccessLinkDialog user={linkUser} onClose={() => setLinkUser(null)} />
     </div>
   );
 }

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { CalendarDays, Check, ExternalLink, Eye, Flag, FolderKanban, Pencil, Plus, Send, Tag, Trash2, UserRound, X } from "lucide-react";
+import { CalendarDays, Check, ExternalLink, Eye, Flag, FolderKanban, Pencil, Plus, Repeat, Send, Tag, Trash2, UserRound, X } from "lucide-react";
 import { toast } from "sonner";
 import {
   addTaskCommentAction,
@@ -13,7 +13,7 @@ import {
   type TaskPatch,
 } from "@/lib/actions/workspace";
 import type { TaskDetail } from "@/lib/workspace/queries";
-import { CHANNEL_TAGS, TASK_STATUSES, TASK_STATUS_META, type ChecklistItem } from "@/lib/workspace/constants";
+import { CHANNEL_TAGS, RECURRENCES, RECURRENCE_LABELS, TASK_STATUSES, TASK_STATUS_META, type ChecklistItem } from "@/lib/workspace/constants";
 import { URGENCIES, URGENCY_META, ticketCode } from "@/lib/constants";
 import { formatDateTime, relativeTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -25,6 +25,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { UserAvatar } from "@/components/shared/user-avatar";
 import { Markdown, toggleTaskInMarkdown } from "./markdown";
+import { ReviewsSection } from "./reviews-section";
 import { MarkdownEditor } from "./markdown-editor";
 
 type Member = { id: number; name: string };
@@ -252,6 +253,20 @@ export function TaskSheet({
                   />
                 </div>
               </Row>
+              <Row icon={Repeat} label="Repetir">
+                <Select value={task.recurrence} onValueChange={(v) => v && save({ recurrence: String(v) }, v !== "none" ? "Al completarla se creará la siguiente automáticamente." : undefined)}>
+                  <SelectTrigger className="w-48">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {RECURRENCES.map((r) => (
+                      <SelectItem key={r} value={r}>
+                        {RECURRENCE_LABELS[r]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Row>
               <Row icon={FolderKanban} label="Proyecto">
                 <Select value={String(task.projectId)} onValueChange={(v) => v && save({ projectId: Number(v) }, "Tarea movida de proyecto.")}>
                   <SelectTrigger className="w-56">
@@ -358,6 +373,8 @@ export function TaskSheet({
                 </button>
               )}
             </div>
+
+            <ReviewsSection key={task.id} taskId={task.id} />
 
             <div className="space-y-2">
               <h3 className="flex items-center justify-between text-sm font-semibold">

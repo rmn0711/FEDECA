@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarDays, CheckSquare, FileText, Link2, MessageSquare } from "lucide-react";
+import { CalendarDays, CheckSquare, FileText, Link2, MessageSquare, Repeat } from "lucide-react";
 import type { TaskCard as TaskCardData } from "@/lib/workspace/queries";
 import { dueState, formatShortDate } from "@/lib/workspace/constants";
 import { URGENCY_META } from "@/lib/constants";
@@ -93,6 +93,7 @@ export function TaskCardView({
         )}
         {task.hasDescription && <FileText className="size-3" aria-label="Tiene descripción" />}
         {task.ticketId && <Link2 className="size-3" aria-label="Vinculada a solicitud" />}
+        {task.recurrence !== "none" && <Repeat className="size-3" aria-label="Tarea recurrente" />}
         <span className="ml-auto">
           {task.assigneeName ? (
             <UserAvatar fullName={task.assigneeName} size="sm" />

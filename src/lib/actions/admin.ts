@@ -1,5 +1,6 @@
 "use server";
 
+import { audit } from "@/lib/audit";
 import bcrypt from "bcryptjs";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
@@ -12,6 +13,7 @@ import { renderTicketEmail } from "@/lib/email/template";
 import { appUrl } from "@/lib/constants";
 import { splitEmails } from "@/lib/tickets/notifications";
 import { validatePassword } from "@/lib/auth/password";
+import { accessUrl, ensureAccessToken, newAccessToken, sendAccessLinkEmail } from "@/lib/auth/access";
 import type { FormState } from "./auth";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -24,7 +26,7 @@ function cleanEmails(value: string) {
 }
 
 export async function updateCategoryAction(_: FormState, formData: FormData): Promise<FormState> {
-  await requireRole("admin");
+  const admin = await requireRole("admin");
   const slug = String(formData.get("slug") ?? "");
   const responsible = String(formData.get("responsibleId") ?? "");
   let ccEmails: string | null;
@@ -43,6 +45,11 @@ export async function updateCategoryAction(_: FormState, formData: FormData): Pr
     .update(categories)
     .set({ responsibleId, ccEmails, active: formData.get("active") === "on" })
     .where(eq(categories.slug, slug));
+  const [resp] = responsibleId ? await db.select({ name: users.name }).from(users).where(eq(users.id, responsibleId)) : [];
+  await audit(admin.id, "actualizar", "categoria", slug, `Categoría ${slug}: responsable ${resp?.name ?? "ninguno"}${formData.get("active") === "on" ? "" : " (desactivada)"}`, {
+    responsibleId,
+    ccEmails,
+  });
   revalidatePath("/admin/categorias");
   revalidatePath("/solicitudes/nueva");
   return { error: null, ok: "Categoría actualizada." };
@@ -77,14 +84,30 @@ export async function saveUserAction(_: FormState, formData: FormData): Promise<
       if (pwError) return { error: pwError };
       patch.passwordHash = await bcrypt.hash(password, 10);
     }
+    const [before] = await db.select().from(users).where(eq(users.id, id));
     await db.update(users).set(patch).where(eq(users.id, id));
+    const changes: string[] = [];
+    if (before && before.role !== role) changes.push(`rol ${before.role} → ${role}`);
+    if (before && before.active !== active) changes.push(active ? "activado" : "desactivado");
+    if (before && before.email !== email) changes.push(`correo ${before.email} → ${email}`);
+    if (password) changes.push("contraseña restablecida");
+    await audit(admin.id, "actualizar", "usuario", id, `Usuario ${name}${changes.length ? `: ${changes.join(", ")}` : " actualizado"}`, { role, active });
     if (role === "user") await db.update(categories).set({ responsibleId: null }).where(eq(categories.responsibleId, id));
   } else {
-    const pwError = validatePassword(password);
-    if (pwError) return { error: pwError };
-    await db.insert(users).values({ name, email, role, department, phone, active, passwordHash: await bcrypt.hash(password, 10) });
+    // Sin contraseña: la persona la crea al abrir su enlace de acceso.
+    if (password) {
+      const pwError = validatePassword(password);
+      if (pwError) return { error: pwError };
+    }
+    const [created] = await db
+      .insert(users)
+      .values({ name, email, role, department, phone, active, passwordHash: password ? await bcrypt.hash(password, 10) : "", accessToken: newAccessToken() })
+      .returning();
+    await audit(admin.id, "crear", "usuario", created.id, `Usuario creado: ${name} (${email}) con rol ${role}`);
 
-    if (formData.get("sendWelcome") === "on") {
+    if (formData.get("sendWelcome") === "on" && !password) {
+      await sendAccessLinkEmail(created);
+    } else if (formData.get("sendWelcome") === "on") {
       const { html, text } = renderTicketEmail({
         preheader: "Ya tienes acceso a la Mesa de Ayuda ACF",
         eyebrow: "Bienvenida",
@@ -109,7 +132,7 @@ export async function saveUserAction(_: FormState, formData: FormData): Promise<
 }
 
 export async function saveSettingsAction(_: FormState, formData: FormData): Promise<FormState> {
-  await requireRole("admin");
+  const admin = await requireRole("admin");
   let notify: string | null;
   try {
     notify = cleanEmails(String(formData.get("notifyEmails") ?? ""));
@@ -121,6 +144,7 @@ export async function saveSettingsAction(_: FormState, formData: FormData): Prom
     .insert(settings)
     .values({ key: "notify_emails", value: notify ?? "" })
     .onConflictDoUpdate({ target: settings.key, set: { value: notify ?? "" } });
+  await audit(admin.id, "actualizar", "configuracion", "notify_emails", `Correos de la mesa de ayuda: ${notify || "administradores"}`);
   revalidatePath("/admin/configuracion");
   return { error: null, ok: "Configuración guardada." };
 }
@@ -145,4 +169,40 @@ export async function sendTestEmailAction(_: FormState, formData: FormData): Pro
   return smtpConfigured()
     ? { error: null, ok: `Correo de prueba enviado a ${to}. Revisa el registro de correos.` }
     : { error: null, ok: "SMTP no configurado: el correo quedó registrado como simulado." };
+}
+
+// ── Enlaces personales de acceso ──
+
+export async function getAccessLinkAction(userId: number) {
+  await requireRole("admin");
+  return accessUrl(await ensureAccessToken(userId));
+}
+
+export async function sendAccessLinkAction(userId: number) {
+  const admin = await requireRole("admin");
+  const db = await getDb();
+  const [u] = await db.select().from(users).where(eq(users.id, userId));
+  if (!u || !u.active) return { ok: false as const, error: "Usuario no encontrado o inactivo." };
+  await sendAccessLinkEmail(u);
+  await audit(admin.id, "enviar_enlace", "usuario", u.id, `Enlace de acceso enviado a ${u.name} (${u.email})`);
+  return { ok: true as const };
+}
+
+export async function regenerateAccessLinkAction(userId: number) {
+  const admin = await requireRole("admin");
+  const db = await getDb();
+  const [u] = await db.update(users).set({ accessToken: newAccessToken() }).where(eq(users.id, userId)).returning();
+  if (!u) return { ok: false as const, error: "Usuario no encontrado." };
+  await audit(admin.id, "regenerar_enlace", "usuario", u.id, `Enlace de acceso regenerado para ${u.name} (el anterior dejó de funcionar)`);
+  return { ok: true as const, data: accessUrl(u.accessToken!) };
+}
+
+/** Envía el enlace a todos los solicitantes activos que nunca han ingresado. */
+export async function sendAccessLinksToNewRequestersAction() {
+  const admin = await requireRole("admin");
+  const db = await getDb();
+  const pending = (await db.select().from(users).where(eq(users.active, true))).filter((u) => u.role === "user" && !u.lastLoginAt);
+  for (const u of pending) await sendAccessLinkEmail(u);
+  await audit(admin.id, "enviar_enlace", "usuario", null, `Enlace de acceso enviado a ${pending.length} solicitante(s) sin ingreso`);
+  return { ok: true as const, data: pending.length };
 }

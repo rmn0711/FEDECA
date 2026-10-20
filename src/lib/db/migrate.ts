@@ -197,4 +197,97 @@ export const SCHEMA_SQL = [
     data BYTEA NOT NULL
   )`,
   `CREATE INDEX IF NOT EXISTS hd_message_files_msg_idx ON hd_message_files(message_id)`,
+  // ── Auditoría ──
+  `CREATE TABLE IF NOT EXISTS hd_audit_log (
+    id SERIAL PRIMARY KEY,
+    actor_id INTEGER REFERENCES hd_users(id) ON DELETE SET NULL,
+    action TEXT NOT NULL,
+    entity TEXT NOT NULL,
+    entity_id TEXT,
+    summary TEXT NOT NULL,
+    meta JSONB NOT NULL DEFAULT '{}'::jsonb,
+    ip TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`,
+  `CREATE INDEX IF NOT EXISTS hd_audit_log_created_idx ON hd_audit_log(created_at DESC)`,
+  `CREATE INDEX IF NOT EXISTS hd_audit_log_entity_idx ON hd_audit_log(entity, entity_id)`,
+  // ── Base de conocimiento ──
+  `CREATE TABLE IF NOT EXISTS hd_kb_articles (
+    id SERIAL PRIMARY KEY,
+    category_slug TEXT REFERENCES hd_categories(slug) ON DELETE SET NULL,
+    title TEXT NOT NULL,
+    summary TEXT,
+    body TEXT NOT NULL DEFAULT '',
+    keywords TEXT,
+    published BOOLEAN NOT NULL DEFAULT TRUE,
+    views INTEGER NOT NULL DEFAULT 0,
+    helpful INTEGER NOT NULL DEFAULT 0,
+    not_helpful INTEGER NOT NULL DEFAULT 0,
+    deflections INTEGER NOT NULL DEFAULT 0,
+    created_by INTEGER REFERENCES hd_users(id) ON DELETE SET NULL,
+    updated_by INTEGER REFERENCES hd_users(id) ON DELETE SET NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`,
+  // Tareas recurrentes (columna agregada después: se añade si no existe).
+  `ALTER TABLE hd_tasks ADD COLUMN IF NOT EXISTS recurrence TEXT NOT NULL DEFAULT 'none'`,
+  // ── Aprobación de piezas ──
+  `CREATE TABLE IF NOT EXISTS hd_reviews (
+    id SERIAL PRIMARY KEY,
+    task_id INTEGER NOT NULL REFERENCES hd_tasks(id) ON DELETE CASCADE,
+    version INTEGER NOT NULL,
+    note TEXT,
+    status TEXT NOT NULL DEFAULT 'pendiente' CHECK (status IN ('pendiente','aprobada','cambios')),
+    filename TEXT NOT NULL,
+    mime TEXT NOT NULL,
+    size INTEGER NOT NULL,
+    data BYTEA NOT NULL,
+    submitted_by INTEGER REFERENCES hd_users(id) ON DELETE SET NULL,
+    submitted_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    decided_by INTEGER REFERENCES hd_users(id) ON DELETE SET NULL,
+    decided_at TIMESTAMPTZ,
+    decision_comment TEXT,
+    UNIQUE (task_id, version)
+  )`,
+  `CREATE TABLE IF NOT EXISTS hd_review_comments (
+    id SERIAL PRIMARY KEY,
+    review_id INTEGER NOT NULL REFERENCES hd_reviews(id) ON DELETE CASCADE,
+    author_id INTEGER REFERENCES hd_users(id) ON DELETE SET NULL,
+    body TEXT NOT NULL,
+    x REAL,
+    y REAL,
+    resolved BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`,
+  `CREATE INDEX IF NOT EXISTS hd_review_comments_review_idx ON hd_review_comments(review_id)`,
+  // ── Notificaciones push ──
+  `CREATE TABLE IF NOT EXISTS hd_push_subscriptions (
+    endpoint TEXT PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES hd_users(id) ON DELETE CASCADE,
+    p256dh TEXT NOT NULL,
+    auth TEXT NOT NULL,
+    user_agent TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`,
+  `CREATE INDEX IF NOT EXISTS hd_push_subscriptions_user_idx ON hd_push_subscriptions(user_id)`,
+  // Enlace personal de acceso (solo contraseña) para clientes internos.
+  `ALTER TABLE hd_users ADD COLUMN IF NOT EXISTS access_token TEXT`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS hd_users_access_token_idx ON hd_users(access_token)`,
+  // ── Seguimientos y recordatorios ──
+  `CREATE TABLE IF NOT EXISTS hd_followups (
+    id SERIAL PRIMARY KEY,
+    owner_id INTEGER NOT NULL REFERENCES hd_users(id) ON DELETE CASCADE,
+    title TEXT NOT NULL,
+    notes TEXT,
+    remind_at TIMESTAMPTZ,
+    status TEXT NOT NULL DEFAULT 'pendiente' CHECK (status IN ('pendiente','hecho')),
+    person_id INTEGER REFERENCES hd_users(id) ON DELETE SET NULL,
+    ticket_id INTEGER REFERENCES hd_tickets(id) ON DELETE SET NULL,
+    task_id INTEGER REFERENCES hd_tasks(id) ON DELETE SET NULL,
+    notified_at TIMESTAMPTZ,
+    done_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  )`,
+  `CREATE INDEX IF NOT EXISTS hd_followups_owner_idx ON hd_followups(owner_id, status)`,
+  `CREATE INDEX IF NOT EXISTS hd_followups_due_idx ON hd_followups(remind_at) WHERE status = 'pendiente'`,
 ];

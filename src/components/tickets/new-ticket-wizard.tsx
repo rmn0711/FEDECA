@@ -1,11 +1,12 @@
 "use client";
 
 import { useActionState, useEffect, useMemo, useState, useTransition } from "react";
-import { ArrowLeft, Check, Clock3, Paperclip, Send, UserRound, X } from "lucide-react";
+import { ArrowLeft, BookOpen, Check, Clock3, Paperclip, Send, UserRound, X } from "lucide-react";
 import { toast } from "sonner";
 import { CATEGORIES, getCategory, type CategoryField } from "@/lib/categories";
 import { MAX_FILE_BYTES, MAX_FILES, URGENCIES, URGENCY_META, addBusinessHours, type Urgency } from "@/lib/constants";
 import { createTicketAction } from "@/lib/actions/tickets";
+import { suggestArticlesAction } from "@/lib/actions/kb";
 import type { FormState } from "@/lib/actions/auth";
 import { formatBytes, formatDateTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -94,6 +95,17 @@ export function NewTicketWizard({ categories, initialCategory }: { categories: C
   useEffect(() => {
     if (state.error) toast.error(state.error);
   }, [state]);
+
+  // Sugerencias de la base de conocimiento según lo que escribe (evita solicitudes que ya tienen respuesta).
+  const [query, setQuery] = useState("");
+  const [suggestions, setSuggestions] = useState<Array<{ id: number; title: string; summary: string | null }>>([]);
+  useEffect(() => {
+    if (!slug || query.trim().length < 6) return;
+    const t = setTimeout(() => {
+      suggestArticlesAction(slug, query).then(setSuggestions).catch(() => {});
+    }, 450);
+    return () => clearTimeout(t);
+  }, [slug, query]);
 
   function addFiles(list: FileList | null) {
     if (!list) return;
@@ -250,8 +262,34 @@ export function NewTicketWizard({ categories, initialCategory }: { categories: C
         <CardContent className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="title">Asunto *</Label>
-            <Input id="title" name="title" required minLength={5} maxLength={160} placeholder={def.titlePlaceholder} />
+            <Input
+              id="title"
+              name="title"
+              required
+              minLength={5}
+              maxLength={160}
+              placeholder={def.titlePlaceholder}
+              onChange={(e) => setQuery(e.target.value)}
+            />
           </div>
+          {suggestions.length > 0 && query.trim().length >= 6 && (
+            <div className="space-y-2 rounded-xl border border-[#2a78d6]/30 bg-[#2a78d6]/[0.05] p-3">
+              <p className="flex items-center gap-2 text-sm font-medium">
+                <BookOpen className="size-4 text-[#2a78d6]" />
+                Antes de enviar, quizás esto lo resuelve:
+              </p>
+              <ul className="space-y-1">
+                {suggestions.map((a) => (
+                  <li key={a.id}>
+                    <a href={`/ayuda/${a.id}?desde=solicitud`} target="_blank" rel="noreferrer" className="text-sm font-medium text-[#1c5cab] hover:underline">
+                      {a.title}
+                    </a>
+                    {a.summary && <span className="text-xs text-muted-foreground"> · {a.summary}</span>}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           <div className="grid gap-4 md:grid-cols-2">
             {def.fields.map((f) => (

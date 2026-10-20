@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { ProjectBoard } from "@/components/workspace/project-board";
 import { ProjectDialog } from "@/components/workspace/project-dialog";
 import { ArchiveProjectButton } from "@/components/workspace/archive-project-button";
+import { TemplateDialog } from "@/components/workspace/template-dialog";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const project = await getProject(Number((await params).id));
@@ -54,12 +55,15 @@ export default async function ProjectPage({
               </div>
             )}
           </div>
-          {user.role === "admin" && (
-            <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            <TemplateDialog projectId={project.id} />
+            {user.role === "admin" && (
+              <>
               <ProjectDialog project={{ id: project.id, name: project.name, description: project.description, icon: project.icon, color: project.color }} />
               <ArchiveProjectButton id={project.id} archived={project.archived} />
-            </div>
-          )}
+              </>
+            )}
+          </div>
         </div>
       </div>
       <ProjectBoard

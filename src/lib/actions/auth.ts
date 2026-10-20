@@ -1,5 +1,6 @@
 "use server";
 
+import { audit } from "@/lib/audit";
 import { createHash, randomBytes } from "node:crypto";
 import bcrypt from "bcryptjs";
 import { and, eq, gt, isNull } from "drizzle-orm";
@@ -29,10 +30,20 @@ export async function login(_: FormState, formData: FormData): Promise<FormState
 
   const db = await getDb();
   const [user] = await db.select().from(users).where(eq(users.email, email));
+  if (user && !user.passwordHash) {
+    return { error: "Aún no has creado tu contraseña. Ábrela desde tu enlace de acceso o usa «¿Olvidaste tu contraseña?»." };
+  }
   // Siempre se compara un hash para no revelar si el correo existe por el tiempo de respuesta.
   const ok = await bcrypt.compare(password, user?.passwordHash ?? "$2a$10$invalidinvalidinvalidinvalidinvalidinvalidinvalidinva");
-  if (!user || !ok) return { error: "Correo o contraseña incorrectos." };
-  if (!user.active) return { error: "Tu cuenta está desactivada. Contacta al administrador de la mesa de ayuda." };
+  if (!user || !ok) {
+    await audit(user?.id ?? null, "ingreso_fallido", "sesion", null, `Intento de ingreso fallido con ${email}`);
+    return { error: "Correo o contraseña incorrectos." };
+  }
+  if (!user.active) {
+    await audit(user.id, "ingreso_bloqueado", "sesion", null, `Intento de ingreso de cuenta desactivada (${email})`);
+    return { error: "Tu cuenta está desactivada. Contacta al administrador de la mesa de ayuda." };
+  }
+  await audit(user.id, "ingreso", "sesion", null, `${user.name} inició sesión`);
 
   await db.update(users).set({ lastLoginAt: new Date() }).where(eq(users.id, user.id));
   await startSession(user.id);
@@ -77,6 +88,7 @@ export async function register(_: FormState, formData: FormData): Promise<FormSt
     .insert(users)
     .values({ name, email, department: department || null, passwordHash: await bcrypt.hash(password, 10), role: "user" })
     .returning();
+  await audit(user.id, "registro", "usuario", user.id, `Auto-registro de ${name} (${email})`);
   await startSession(user.id);
   redirect("/dashboard");
 }
@@ -129,6 +141,7 @@ export async function confirmPasswordReset(_: FormState, formData: FormData): Pr
 
   await db.update(users).set({ passwordHash: await bcrypt.hash(password, 10) }).where(eq(users.id, reset.userId));
   await db.update(passwordResets).set({ usedAt: new Date() }).where(eq(passwordResets.tokenHash, reset.tokenHash));
+  await audit(reset.userId, "restablecer_clave", "usuario", reset.userId, "Contraseña restablecida por enlace de correo");
   await startSession(reset.userId);
   redirect("/dashboard");
 }
@@ -145,6 +158,7 @@ export async function changePassword(_: FormState, formData: FormData): Promise<
   const pwError = validatePassword(password);
   if (pwError) return { error: pwError };
   await db.update(users).set({ passwordHash: await bcrypt.hash(password, 10) }).where(eq(users.id, me.id));
+  await audit(me.id, "cambiar_clave", "usuario", me.id, `${me.name} cambió su contraseña`);
   return { error: null, ok: "Contraseña actualizada." };
 }
 

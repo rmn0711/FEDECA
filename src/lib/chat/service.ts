@@ -1,9 +1,11 @@
 import "server-only";
+import { audit } from "@/lib/audit";
 import { and, asc, desc, eq, gt, inArray, lt, ne, or, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { getDb } from "@/lib/db";
 import { conversationMembers, conversations, messageFiles, messageReactions, messages, users } from "@/lib/db/schema";
 import { MAX_FILE_BYTES, MAX_FILES, type Role } from "@/lib/constants";
+import { sendPush } from "@/lib/push";
 
 type Actor = { id: number; role: Role };
 
@@ -243,7 +245,40 @@ export async function sendMessage(user: Actor, conversationId: number, body: str
   }
   await db.update(conversations).set({ lastMessageAt: now }).where(eq(conversations.id, conversationId));
   await markRead(user, conversationId);
+  await pushForMessage(user.id, conversationId, text || "📎 Archivo adjunto").catch((e) => console.error("[mesa-de-ayuda] Error en push de chat:", e));
   return msg;
+}
+
+const fold = (s: string) =>
+  s
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+
+/** Push: en mensajes directos al otro; en canales solo a quien mencionan con @Nombre. */
+async function pushForMessage(authorId: number, conversationId: number, text: string) {
+  const db = await getDb();
+  const [conv] = await db.select().from(conversations).where(eq(conversations.id, conversationId));
+  const members = await db
+    .select({ id: users.id, name: users.name })
+    .from(conversationMembers)
+    .innerJoin(users, eq(users.id, conversationMembers.userId))
+    .where(eq(conversationMembers.conversationId, conversationId));
+  const author = members.find((m) => m.id === authorId)?.name ?? "Alguien";
+  const url = `/chat/${conversationId}`;
+  if (conv?.kind === "dm") {
+    const others = members.filter((m) => m.id !== authorId).map((m) => m.id);
+    await sendPush(others, { title: author, body: text.slice(0, 160), url, tag: url });
+    return;
+  }
+  const body = fold(text);
+  const mentioned = members.filter((m) => m.id !== authorId && (body.includes(`@${fold(m.name.split(" ")[0])}`) || body.includes("@todos") || body.includes("@channel")));
+  if (mentioned.length) {
+    await sendPush(
+      mentioned.map((m) => m.id),
+      { title: `${author} te mencionó en #${conv?.name}`, body: text.slice(0, 160), url, tag: url }
+    );
+  }
 }
 
 async function ownMessage(user: Actor, messageId: number) {
@@ -333,6 +368,7 @@ export async function createChannel(
     .insert(conversationMembers)
     .values(valid.map((v) => ({ conversationId: conv.id, userId: v.id })))
     .onConflictDoNothing();
+  await audit(user.id, "crear", "canal", conv.id, `Canal ${input.isPrivate ? "privado" : "público"} creado: #${name}`);
   return conv.id;
 }
 
@@ -362,6 +398,7 @@ export async function updateChannel(user: Actor, conversationId: number, input: 
     await db
       .delete(conversationMembers)
       .where(and(eq(conversationMembers.conversationId, conversationId), inArray(conversationMembers.userId, input.removeIds)));
+    await audit(user.id, "quitar_miembros", "canal", conversationId, `Miembros retirados de #${conv.name}`, { userIds: input.removeIds });
   }
 }
 
