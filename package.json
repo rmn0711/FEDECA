@@ -1,12 +1,17 @@
 {
-  "name": "fedefa",
+  "name": "fedeca",
   "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "seed:generate": "tsx scripts/generate-seed.ts",
+    "icons": "node scripts/make-icons.cjs"
   },
   "dependencies": {
     "@fontsource-variable/bricolage-grotesque": "^5.3.0",

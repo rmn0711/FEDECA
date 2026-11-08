@@ -81,7 +81,7 @@ export function scaleRecipe(recipe: Recipe, target: PortionTarget, opts: { maxFa
   let diff = target.kcal - kcalNow();
   const carbBase = group("carb");
   if (carbBase > 0 && Math.abs(diff) > 5) {
-    factors.carb = clamp((carbBase + diff) / carbBase, 0.4, 3);
+    factors.carb = clamp((carbBase + diff) / carbBase, 0.4, 2.2);
     diff = target.kcal - kcalNow();
   }
   const fatBase = group("fat");
@@ -166,4 +166,14 @@ export function snackTitle(lines: RecipeLine[]): string {
 export function recipeText(r: RecipeDef): string {
   const names = r.lines.map((l) => FOODS[l.food].name + " " + (l.label ?? ""));
   return [r.name, ...names, ...r.steps, ...r.tags, r.pregNote ?? ""].join(" \n ");
+}
+
+/** Resumen corto del plato para notificaciones y tarjetas: los 3 ingredientes principales con gramaje. */
+export function plateSummary(lines: RecipeLine[], max = 3): string {
+  return [...lines]
+    .filter((l) => l.food !== "especias" && l.g >= 20)
+    .sort((a, b) => b.g - a.g)
+    .slice(0, max)
+    .map(describeLine)
+    .join(" · ");
 }

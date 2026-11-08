@@ -158,3 +158,45 @@ describe("lista de mercado y meal prep", () => {
     expect(tips.length).toBeGreaterThan(3);
   });
 });
+
+import { computeDay } from "@/lib/day";
+describe("estado del día", () => {
+  const base = { profile: jose, date: "2026-11-10", today: "2026-11-10", overrides: {} };
+  it("sin registros: 6 tomas, próxima = desayuno, proteína total = meta", () => {
+    const d = computeDay({ ...base, logs: [] });
+    expect(d.slots).toHaveLength(6);
+    expect(d.next?.slot).toBe(0);
+    const sum = d.slots.reduce((a, s) => a + s.proteinG, 0);
+    expect(sum).toBeGreaterThanOrEqual(d.targets.proteinG);
+    expect(sum - d.targets.proteinG).toBeLessThanOrEqual(5); // el reparto fijo 30/30/40/30/30/20 suma 180 g
+  });
+  it("registro tardío corre horarios y omitir redistribuye proteína", () => {
+    const mk = (slot: number, status: "eaten" | "skipped", at: string | null): import("@/lib/types").MealLog => ({ id: String(slot), household_id: "h", profile_id: "j", date: "2026-11-10", slot: slot as 0, recipe_slug: "x", status, eaten_at: at, protein_g: 30, kcal: 500, portion_factor: 1 });
+    const d = computeDay({ ...base, logs: [mk(0, "eaten", "08:00"), mk(1, "eaten", "14:00"), mk(2, "skipped", null)] });
+    expect(d.slots[3].time).toBe("17:00");
+    expect(d.slots[2].status).toBe("skipped");
+    expect(d.slots[3].proteinG + d.slots[4].proteinG + d.slots[5].proteinG).toBeGreaterThan(80);
+    expect(Math.max(...d.slots.map((s) => s.proteinG))).toBeLessThanOrEqual(45);
+    expect(d.doneCount).toBe(2);
+  });
+  it("el alcohol descuenta kcal de las tomas pendientes sin quitar proteína", () => {
+    const a = computeDay({ ...base, logs: [] });
+    const b = computeDay({ ...base, logs: [], alcohol: [{ id: "a", household_id: "h", profile_id: "j", date: "2026-11-10", drink_key: "ron", mixer_key: null, qty: 2, kcal: 210, std_drinks: 2 }] });
+    expect(b.slots.reduce((s, x) => s + x.kcal, 0)).toBeLessThan(a.slots.reduce((s, x) => s + x.kcal, 0) - 150);
+    expect(b.slots.map((s) => s.proteinG)).toEqual(a.slots.map((s) => s.proteinG));
+  });
+  it("embarazo: sustituye queso costeño en el plato", () => {
+    const d = computeDay({ profile: esposa, date: "2026-11-08", today: "2026-11-08", overrides: { "2026-11-08:0": "breakfast-arepa-con-queso-costeno-y-huevo" }, logs: [] });
+    expect(d.slots[0].recipe.lines.some((l) => l.food === "costeno")).toBe(false);
+  });
+});
+
+import { dayStats, streak } from "@/lib/stats";
+describe("racha", () => {
+  const L = (date: string, n: number) => Array.from({ length: n }, () => ({ date, status: "eaten" as const, protein_g: 30, kcal: 400 }));
+  it("cuenta días seguidos con ≥ 5 tomas y no se rompe por un hoy incompleto", () => {
+    const st = dayStats([...L("2026-11-05", 6), ...L("2026-11-06", 5), ...L("2026-11-07", 6), ...L("2026-11-08", 2)]);
+    expect(streak(st, "2026-11-08")).toBe(3);
+    expect(streak(dayStats([...L("2026-11-05", 6), ...L("2026-11-07", 6)]), "2026-11-08")).toBe(1);
+  });
+});

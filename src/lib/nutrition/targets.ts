@@ -59,7 +59,8 @@ export function dayTargets(p: Profile, date: string, today = date): DayTargets {
   const proteinSlots = proteinPerSlot(proteinG);
   const kcalSlots = kcalPerSlot(kcal, proteinSlots);
   const times = p.meal_times;
-  const ws = isLeg && p.training_time ? assignWorkoutSlots(times, p.training_time) : { pre: null, post: null };
+  const isTrain = p.training_days.includes(weekday(date));
+  const ws = isTrain && p.training_time ? assignWorkoutSlots(times, p.training_time) : { pre: null, post: null };
   if (isLeg) {
     const add = cycle.carbDeltaPerMealG * 4;
     if (ws.pre !== null) kcalSlots[ws.pre] += add;

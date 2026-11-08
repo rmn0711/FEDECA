@@ -1,6 +1,5 @@
 // Catálogo de recetas. Los macros se calculan siempre desde la base de alimentos (foods.ts).
 // EXCLUSIONES ABSOLUTAS: nada de tomate, pepino, papaya, brócoli ni coliflor (ver EXCLUDED_PATTERN y tests).
-import { FOODS } from "./foods";
 import { buildRecipe, snackTitle } from "@/lib/menu/core";
 import type { Recipe, RecipeDef, RecipeLine, Role } from "@/lib/menu/types";
 import type { RecipeKind } from "@/lib/types";
@@ -15,7 +14,6 @@ const slugify = (s: string) =>
     .replace(/(^-|-$)/g, "");
 const lower1 = (s: string) => s.charAt(0).toLowerCase() + s.slice(1);
 const upper1 = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
-const fname = (k: string) => FOODS[k].name;
 
 /* ═════════════════════ Componentes de acompañamiento ═════════════════════ */
 

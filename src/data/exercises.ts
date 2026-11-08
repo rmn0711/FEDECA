@@ -61,8 +61,6 @@ function ex(d: Def): Exercise {
 const rom = (minDeg: number, maxDeg: number): RomLimit => ({ minDeg, maxDeg });
 const UPPER_TXT =
   "No flexiona la rodilla bajo carga: sentado con los pies apoyados.";
-const NO_KNEE_TXT =
-  "No exige flexión de rodilla bajo carga; mantén la rodilla cómoda y sin dolor.";
 
 export const EXERCISES: Exercise[] = [
   /* ───────────── Bloque de rodilla ───────────── */
