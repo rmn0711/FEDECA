@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { EXERCISES, EXERCISE_BY_SLUG } from "@/data/exercises";
-import { availability, buildSession, cardioWeeklyGoal, jogEligible, nextProgression, painAction, phaseFor, recommendSpecialist, romFor, stepGoal, weeksWithoutPainOver3 } from "@/lib/exercise/knee";
+import { availability, buildSession, isExcluded, cardioWeeklyGoal, jogEligible, nextProgression, painAction, phaseFor, recommendSpecialist, romFor, stepGoal, weeksWithoutPainOver3 } from "@/lib/exercise/knee";
 import { legDaysOf, weekPlan } from "@/lib/exercise/plan";
 
 describe("catálogo de ejercicios", () => {
@@ -115,5 +115,26 @@ describe("estructura semanal y sesiones", () => {
   it("con patelofemoral la extensión se sustituye o se omite", () => {
     const s = buildSession("leg_a", { diagnosis: "patellofemoral", ortho_clearance: false }, 3);
     expect(s.map((x) => x.exercise.slug)).not.toContain("extension-cuadriceps-90-45");
+  });
+});
+
+describe("prensa y exclusiones por molestia", () => {
+  const prensa = EXERCISE_BY_SLUG["prensa-piernas-rango-protegido"];
+  it("la prensa arranca conservadora: tope 45° en fase 1, 60° en fase 2", () => {
+    expect(romFor(prensa, "none", 1)!.maxDeg).toBe(45);
+    expect(romFor(prensa, "none", 2)!.maxDeg).toBe(60);
+    expect(romFor(prensa, "none", 3)!.maxDeg).toBe(60);
+  });
+  it("se quita sola con dolor ≥ 4 al subir escaleras o levantarse, o si el usuario la excluye", () => {
+    const base = { excluded_exercises: [] as string[], pain_stairs: 0, pain_chair: 0 };
+    expect(isExcluded(prensa.slug, base).excluded).toBe(false);
+    expect(isExcluded(prensa.slug, { ...base, pain_stairs: 4 }).excluded).toBe(true);
+    expect(isExcluded(prensa.slug, { ...base, excluded_exercises: [prensa.slug] }).excluded).toBe(true);
+  });
+  it("la sesión de pierna A no incluye la prensa si la excluyó", () => {
+    const k = { diagnosis: "none" as const, ortho_clearance: false, excluded_exercises: [prensa.slug], pain_stairs: 0, pain_chair: 0 };
+    expect(buildSession("leg_a", k, 1).map((x) => x.exercise.slug)).not.toContain(prensa.slug);
+    const ok = { ...k, excluded_exercises: [] as string[] };
+    expect(buildSession("leg_a", ok, 1).map((x) => x.exercise.slug)).toContain(prensa.slug);
   });
 });

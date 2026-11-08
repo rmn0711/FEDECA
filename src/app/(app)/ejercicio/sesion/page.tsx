@@ -14,7 +14,7 @@ import type { Exercise, KneePainLog, SessionKind, WorkoutSession, WorkoutSet } f
 const KINDS = Object.keys(SESSION_INFO) as SessionKind[];
 
 export default function SessionPage() {
-  const { active, knee, today, householdId, db } = useApp();
+  const { active, knee, today, householdId, db, saveKnee } = useApp();
   const pid = active?.id;
   const setsQ = useTable<WorkoutSet>("workout_sets", pid ? { match: { profile_id: pid }, range: { col: "date", from: addDays(today, -120) }, order: { col: "date", asc: false } } : null, [pid]);
   const sessionsQ = useTable<WorkoutSession>("workout_sessions", pid ? { match: { profile_id: pid }, range: { col: "date", from: today, to: today } } : null, [pid]);
@@ -33,6 +33,7 @@ export default function SessionPage() {
 
   if (!active || !knee || active.mode === "pregnancy") return <p className="text-muted">Esta sección es solo para el perfil de ejercicio.</p>;
   const profile = active;
+  const kneeSafe = knee;
 
   // Historial por ejercicio (más reciente primero)
   function historyFor(slug: string): SessionSets[] {
@@ -121,7 +122,7 @@ export default function SessionPage() {
           <H2>{sec}</H2>
           {planned.filter((p) => p.section === sec).map((p) => {
             const slug = swaps[p.exercise.slug] ?? p.exercise.slug;
-            return <ExerciseRunner key={p.exercise.slug} planned={p} ex={EXERCISE_BY_SLUG[slug]} original={p.exercise} history={historyFor(slug)} session={session} onPain={(n) => setMaxPain((m) => Math.max(m, n))} onRegress={(reg) => setSwaps((s) => ({ ...s, [p.exercise.slug]: reg }))} onSaved={setsQ.reload} />;
+            return <ExerciseRunner key={p.exercise.slug} planned={p} ex={EXERCISE_BY_SLUG[slug]} original={p.exercise} history={historyFor(slug)} session={session} onPain={(n) => setMaxPain((m) => Math.max(m, n))} onRegress={(reg) => setSwaps((s) => ({ ...s, [p.exercise.slug]: reg }))} onSaved={setsQ.reload} onExclude={() => saveKnee({ excluded_exercises: [...(kneeSafe.excluded_exercises ?? []), slug] })} />;
           })}
         </section>
       ))}
@@ -138,7 +139,7 @@ function Mini({ value, onChange, label, w = "w-full" }: { value: string; onChang
   return <input aria-label={label} inputMode="decimal" value={value} onChange={(e) => onChange(e.target.value)} className={cx("h-10 rounded-xl bg-paper px-2 text-center tabular", w)} />;
 }
 
-function ExerciseRunner({ planned, ex, original, history, session, onPain, onRegress, onSaved }: { planned: PlannedExercise; ex: Exercise; original: Exercise; history: SessionSets[]; session: WorkoutSession; onPain: (n: number) => void; onRegress: (slug: string) => void; onSaved: () => void }) {
+function ExerciseRunner({ planned, ex, original, history, session, onPain, onRegress, onSaved, onExclude }: { planned: PlannedExercise; ex: Exercise; original: Exercise; history: SessionSets[]; session: WorkoutSession; onPain: (n: number) => void; onRegress: (slug: string) => void; onSaved: () => void; onExclude: () => void }) {
   const { db, householdId, active, knee, today } = useApp();
   const prog = useMemo(() => nextProgression(ex, history), [ex, history]);
   const last = history[0]?.sets[0];
@@ -186,6 +187,7 @@ function ExerciseRunner({ planned, ex, original, history, session, onPain, onReg
         ))}
       </div>
       {msg && <p role="alert" className="mt-2 rounded-xl bg-clay-soft p-3 text-sm">{msg}</p>}
+      <button onClick={onExclude} className="mt-3 text-xs text-clay underline">Me molesta la rodilla con este ejercicio: quitarlo de mi rutina</button>
     </div>
   );
 }

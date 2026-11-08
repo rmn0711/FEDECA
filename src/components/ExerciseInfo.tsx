@@ -5,7 +5,7 @@ import type { Exercise, KneeDx, Phase } from "@/lib/types";
 import { PHASE_INFO } from "@/lib/exercise/knee";
 
 export function ExerciseInfo({ ex, dx, phase }: { ex: Exercise; dx: KneeDx; phase: Phase }) {
-  const rom = romFor(ex, dx);
+  const rom = romFor(ex, dx, phase);
   const [rpeLo, rpeHi] = PHASE_INFO[phase].rpe;
   return (
     <div className="space-y-4">

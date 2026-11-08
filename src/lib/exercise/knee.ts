@@ -100,12 +100,32 @@ export interface Availability {
   fallback?: Exercise;
 }
 
-export function romFor(ex: Exercise, dx: KneeDx): RomLimit | null {
-  return ex.romByDx?.[dx] ?? ex.safeRom;
+/** Tope extra de flexión por fase para ejercicios de cadena cerrada con carga (prensa). */
+const PHASE_ROM_CAP: Record<string, Partial<Record<Phase, number>>> = {
+  "prensa-piernas-rango-protegido": { 1: 45, 2: 60 },
+  "prensa-una-pierna": { 3: 60 },
+};
+
+export function romFor(ex: Exercise, dx: KneeDx, phase?: Phase): RomLimit | null {
+  const base = ex.romByDx?.[dx] ?? ex.safeRom;
+  const cap = phase ? PHASE_ROM_CAP[ex.slug]?.[phase] : undefined;
+  if (!base || cap === undefined) return base;
+  return { minDeg: base.minDeg, maxDeg: Math.min(base.maxDeg, cap) };
 }
 
-export function availability(ex: Exercise, knee: Pick<KneeProfile, "diagnosis" | "ortho_clearance">, phase: Phase): Availability {
-  const rom = romFor(ex, knee.diagnosis);
+/** Ejercicios que se quitan solos si ya hay dolor al subir escaleras o al levantarse de una silla (≥ 4). */
+const PAIN_SENSITIVE = ["prensa-piernas-rango-protegido", "prensa-una-pierna", "extension-cuadriceps-90-45", "step-up-cajon-bajo"];
+
+export function isExcluded(slug: string, knee: Pick<KneeProfile, "excluded_exercises" | "pain_stairs" | "pain_chair">): { excluded: boolean; reason?: string } {
+  if (knee.excluded_exercises?.includes(slug)) return { excluded: true, reason: "Lo quitaste de tu rutina porque te molesta." };
+  if (PAIN_SENSITIVE.includes(slug) && (knee.pain_stairs >= 4 || knee.pain_chair >= 4)) return { excluded: true, reason: "Con dolor de 4 o más al subir escaleras o levantarte, este ejercicio queda fuera por ahora." };
+  return { excluded: false };
+}
+
+export function availability(ex: Exercise, knee: Pick<KneeProfile, "diagnosis" | "ortho_clearance"> & Partial<Pick<KneeProfile, "excluded_exercises" | "pain_stairs" | "pain_chair">>, phase: Phase): Availability {
+  const rom = romFor(ex, knee.diagnosis, phase);
+  const ex2 = isExcluded(ex.slug, { excluded_exercises: knee.excluded_exercises ?? [], pain_stairs: knee.pain_stairs ?? 0, pain_chair: knee.pain_chair ?? 0 });
+  if (ex2.excluded) return { available: false, reason: ex2.reason, rom, fallback: ex.regressionSlug ? EXERCISE_BY_SLUG[ex.regressionSlug] : undefined };
   if (ex.minPhase > phase) return { available: false, reason: `Se habilita en la fase ${ex.minPhase}.`, rom, fallback: ex.regressionSlug ? EXERCISE_BY_SLUG[ex.regressionSlug] : undefined };
   if (ex.blockedFor.includes(knee.diagnosis)) return { available: false, reason: `Bloqueado por tu diagnóstico (${DX_LABEL[knee.diagnosis].toLowerCase()}).`, rom, fallback: ex.regressionSlug ? EXERCISE_BY_SLUG[ex.regressionSlug] : undefined };
   // Cirugía / LCA sin aval: la extensión de cuádriceps y los ejercicios unilaterales con carga quedan bloqueados.
@@ -204,7 +224,7 @@ export function repsLabel(ex: Exercise): string {
   return ex.repsMin === ex.repsMax ? `${ex.repsMin}${u}` : `${ex.repsMin}–${ex.repsMax}${u}`;
 }
 
-export function buildSession(kind: SessionKind, knee: Pick<KneeProfile, "diagnosis" | "ortho_clearance">, phase: Phase): PlannedExercise[] {
+export function buildSession(kind: SessionKind, knee: Parameters<typeof availability>[1], phase: Phase): PlannedExercise[] {
   const info = SESSION_INFO[kind];
   const out: PlannedExercise[] = [];
   const add = (slug: string, section: PlannedExercise["section"], opts: { sets?: number } = {}) => {
@@ -219,7 +239,7 @@ export function buildSession(kind: SessionKind, knee: Pick<KneeProfile, "diagnos
       } else return;
     }
     if (out.some((o) => o.exercise.slug === ex.slug)) return;
-    out.push({ exercise: ex, section, rom: romFor(ex, knee.diagnosis), note, sets: opts.sets ?? ex.sets, repsLabel: repsLabel(ex) });
+    out.push({ exercise: ex, section, rom: romFor(ex, knee.diagnosis, phase), note, sets: opts.sets ?? ex.sets, repsLabel: repsLabel(ex) });
   };
 
   if (kind === "mobility") {

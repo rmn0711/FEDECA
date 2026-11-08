@@ -52,7 +52,7 @@ create policy exercises_read on public.exercises for select to authenticated usi
 -- ───────────── Funciones de alta ─────────────
 
 -- Crea el hogar del usuario con los dos perfiles precargados (Jose y su esposa).
-create or replace function public.bootstrap_household(jose_name text default 'Jose', spouse_name text default 'Esposa')
+create or replace function public.bootstrap_household(jose_name text default 'Jose', spouse_name text default 'Yanina')
 returns uuid
 language plpgsql
 security definer

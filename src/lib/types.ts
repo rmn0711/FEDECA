@@ -91,6 +91,8 @@ export interface KneeProfile {
   ortho_clearance: boolean;
   start_date: string; // inicio del programa
   phase_override: Phase | null;
+  /** Ejercicios que el usuario quitó de su rutina porque le molestan. */
+  excluded_exercises: string[];
 }
 
 export type SessionKind =

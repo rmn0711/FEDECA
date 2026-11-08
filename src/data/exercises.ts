@@ -431,18 +431,14 @@ export const EXERCISES: Exercise[] = [
     repsMax: 12,
     restSec: 90,
     tempo: "3-0-2-0",
-    safeRom: rom(0, 90),
+    safeRom: rom(0, 60),
     romByDx: {
-      meniscus: rom(0, 60),
-      acl: rom(0, 60),
-      mcl: rom(0, 60),
       patellofemoral: rom(0, 45),
-      osteoarthritis: rom(0, 60),
-      patellar_tendinitis: rom(0, 60),
-      post_surgery: rom(0, 60),
+      post_surgery: rom(0, 45),
+      acl: rom(0, 45),
     },
     safeRomText:
-      "Sin diagnóstico 0–90°; con meniscos, LCA, LCM, tendinitis, artrosis o cirugía 0–60°; con dolor patelofemoral 0–45°. Pon un tope en la máquina.",
+      "Por defecto 0–60° (rodilla poco flexionada); con dolor patelofemoral, LCA o cirugía 0–45°. En la fase 1 el tope es 45°. Solo si no hay dolor en la fase 3 puedes llegar a 90°. Pon un tope físico en la máquina y, si te molesta, quítala de tu rutina.",
     cues: [
       "Pies a la anchura de caderas, espalda y glúteos pegados al respaldo",
       "Baja hasta el tope marcado, sin que se levante la pelvis",

@@ -43,8 +43,8 @@ async function seedLocal(db: Db): Promise<void> {
   if (existing.length) return;
   const base = { household_id: LOCAL_HOUSEHOLD_ID, meal_times: defaultMealTimes(), onboarding_done: false, medical_ack: false, uses_glp1: false, waist_cm: null, hip_cm: null, neck_cm: null, training_time: null, training_place: null, goal_weight_kg: null, pre_pregnancy_weight_kg: null, age: null };
   const jose = await db.insert<Profile>("profiles", { ...base, slug: "jose", name: "Jose", mode: "fat_loss", sex: "male", height_cm: 178, start_weight_kg: 123, current_weight_kg: 123, protein_anchor_weight_kg: 123, training_days: DEFAULT_TRAINING_DAYS, due_date: null });
-  await db.insert<Profile>("profiles", { ...base, slug: "esposa", name: "Esposa", mode: "pregnancy", sex: "female", height_cm: 160, start_weight_kg: null, current_weight_kg: null, protein_anchor_weight_kg: null, training_days: [], due_date: "2027-04-15" });
-  await db.insert<KneeProfile>("knee_profiles", { household_id: LOCAL_HOUSEHOLD_ID, profile_id: jose.id, side: "right", diagnosis: "none", surgery_type: null, surgery_months_ago: null, pain_rest: 0, pain_stairs: 0, pain_chair: 0, ortho_clearance: false, start_date: todayISO(), phase_override: null });
+  await db.insert<Profile>("profiles", { ...base, slug: "esposa", name: "Yanina", mode: "pregnancy", sex: "female", height_cm: 160, start_weight_kg: null, current_weight_kg: null, protein_anchor_weight_kg: null, training_days: [], due_date: "2027-04-15" });
+  await db.insert<KneeProfile>("knee_profiles", { household_id: LOCAL_HOUSEHOLD_ID, profile_id: jose.id, side: "right", diagnosis: "none", surgery_type: null, surgery_months_ago: null, pain_rest: 0, pain_stairs: 0, pain_chair: 0, ortho_clearance: false, start_date: todayISO(), phase_override: null, excluded_exercises: [] });
 }
 
 export function AppProvider({ children }: { children: ReactNode }) {
@@ -94,7 +94,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
         } else {
           await seedLocal(db);
         }
-        const profs = await db.select<Profile>("profiles", { match: { household_id: hid }, order: { col: "slug", asc: false } });
+        let profs = await db.select<Profile>("profiles", { match: { household_id: hid }, order: { col: "slug", asc: false } });
+        // El perfil de la esposa se llama Yanina (corrige instalaciones previas con el nombre genérico).
+        const generic = profs.find((p) => p.slug === "esposa" && p.name === "Esposa");
+        if (generic) {
+          await db.update<Profile>("profiles", generic.id, { name: "Yanina" });
+          profs = profs.map((p) => (p.id === generic.id ? { ...p, name: "Yanina" } : p));
+        }
         const stored = typeof localStorage !== "undefined" ? localStorage.getItem(ACTIVE_KEY) : null;
         const act = profs.find((p) => p.id === stored) ?? profs.find((p) => p.slug === "jose") ?? profs[0];
         const kn = profs.find((p) => p.slug === "jose") ? (await db.select<KneeProfile>("knee_profiles", { match: { profile_id: profs.find((p) => p.slug === "jose")!.id } }))[0] ?? null : null;
