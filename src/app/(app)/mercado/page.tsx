@@ -11,13 +11,13 @@ import { AISLE_ORDER } from "@/lib/menu/types";
 import type { MenuOverride } from "@/lib/types";
 
 export default function MarketPage() {
-  const { profiles, today, householdId } = useApp();
+  const { profiles, today, householdId, prefs } = useApp();
   const [which, setWhich] = useState<0 | 1>(0);
   const ws = addDays(weekStart(today), which * 7);
   const week = Array.from({ length: 7 }, (_, i) => addDays(ws, i));
   const ov = useTable<MenuOverride>("menu_overrides", { match: { household_id: householdId }, range: { col: "date", from: ws, to: addDays(ws, 6) } }, [ws]);
   const overrides: OverrideMap = useMemo(() => Object.fromEntries(ov.rows.map((o) => [`${o.date}:${o.slot}`, o.recipe_slug])), [ov.rows]);
-  const plan = useMemo(() => planWeek(ws, overrides), [ws, overrides]);
+  const plan = useMemo(() => planWeek(ws, overrides, prefs), [ws, overrides, prefs]);
   const people: PersonWeek[] = useMemo(() => profiles.map((p) => ({ plan, pregnant: p.mode === "pregnancy", targets: Object.fromEntries(week.map((d) => [d, dayTargets(p, d, today)])) })), [profiles, plan, week, today]);
   const list = useMemo(() => buildShoppingList(people), [people]);
   const tips = useMemo(() => mealPrepTips(people, week), [people, week]);

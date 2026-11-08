@@ -9,6 +9,7 @@ import { defaultMealTimes } from "./nutrition/meals";
 import { needsProteinRecalc } from "./nutrition/calc";
 import { DEFAULT_TRAINING_DAYS } from "./exercise/plan";
 import type { KneeProfile, Profile, WeightLog } from "./types";
+import { buildPrefs, type FoodPrefRow, type FoodPrefs, type PrefValue } from "./prefs";
 
 interface Ctx {
   db: Db;
@@ -23,6 +24,10 @@ interface Ctx {
   patchProfile: (id: string, patch: Partial<Profile>) => Promise<Profile>;
   saveKnee: (patch: Partial<KneeProfile>) => Promise<KneeProfile>;
   logWeight: (kg: number, date?: string) => Promise<void>;
+  /** Gustos combinados del hogar (el menú es uno solo). */
+  prefs: FoodPrefs;
+  prefRows: FoodPrefRow[];
+  setPref: (profileId: string, foodKey: string, pref: PrefValue | null) => Promise<void>;
   signOut: () => Promise<void>;
   today: string;
   nowTime: string;
@@ -58,6 +63,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [knee, setKnee] = useState<KneeProfile | null>(null);
+  const [prefRows, setPrefRows] = useState<FoodPrefRow[]>([]);
   const [now, setNow] = useState(() => new Date());
 
   useEffect(() => {
@@ -104,7 +110,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const stored = typeof localStorage !== "undefined" ? localStorage.getItem(ACTIVE_KEY) : null;
         const act = profs.find((p) => p.id === stored) ?? profs.find((p) => p.slug === "jose") ?? profs[0];
         const kn = profs.find((p) => p.slug === "jose") ? (await db.select<KneeProfile>("knee_profiles", { match: { profile_id: profs.find((p) => p.slug === "jose")!.id } }))[0] ?? null : null;
+        const prows = await db.select<FoodPrefRow>("food_preferences", { match: { household_id: hid } }).catch(() => [] as FoodPrefRow[]);
         if (cancelled) return;
+        setPrefRows(prows);
         setHouseholdId(hid);
         setInviteCode(code);
         setProfiles(profs);
@@ -170,6 +178,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [db, householdId, active, patchProfile],
   );
 
+  const setPref = useCallback(
+    async (profileId: string, foodKey: string, pref: PrefValue | null) => {
+      const current = prefRows.find((r) => r.profile_id === profileId && r.food_key === foodKey);
+      if (pref === null) {
+        if (current?.id) await db.remove("food_preferences", current.id);
+        setPrefRows((rs) => rs.filter((r) => !(r.profile_id === profileId && r.food_key === foodKey)));
+        return;
+      }
+      const saved = await db.upsert<FoodPrefRow>("food_preferences", { household_id: householdId, profile_id: profileId, food_key: foodKey, pref }, ["profile_id", "food_key"]);
+      setPrefRows((rs) => [...rs.filter((r) => !(r.profile_id === profileId && r.food_key === foodKey)), saved]);
+    },
+    [db, prefRows, householdId],
+  );
+
   const signOut = useCallback(async () => {
     if (isSupabaseConfigured) await supabaseBrowser().auth.signOut();
     router.replace("/login");
@@ -188,6 +210,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     patchProfile,
     saveKnee,
     logWeight,
+    prefs: buildPrefs(prefRows),
+    prefRows,
+    setPref,
     signOut,
     today: todayISO(now),
     nowTime: nowHHMM(now),

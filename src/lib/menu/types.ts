@@ -76,6 +76,8 @@ export interface RecipeDef {
   /** Contenido de cafeína (mg) por porción base; 0 si no aplica. */
   caffeineMg?: number;
   pregNote?: string;
+  /** Nombre del plato para meriendas (el nombre base lista los ingredientes). */
+  dish?: string;
 }
 
 export interface Recipe extends RecipeDef {

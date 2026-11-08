@@ -177,3 +177,9 @@ export function plateSummary(lines: RecipeLine[], max = 3): string {
     .map(describeLine)
     .join(" · ");
 }
+
+/** Título y detalle de una merienda: "Cerdo magro en trozos al ajillo" / "115 g de lomo de cerdo magro = 31 g de proteína". */
+export function snackHeading(recipe: Pick<RecipeDef, "dish">, lines: RecipeLine[]): { title: string; detail: string } {
+  const full = snackTitle(lines);
+  return { title: recipe.dish ?? full.split(" = ")[0], detail: full };
+}

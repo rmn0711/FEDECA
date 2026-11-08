@@ -9,12 +9,12 @@ import { useApp } from "@/lib/app-context";
 import { computeDay } from "@/lib/day";
 import { addDays, longDate, num, shortDate, time12, weekday, WEEKDAY_SHORT, weekStart } from "@/lib/format";
 import { useTable } from "@/lib/hooks";
-import { plateSummary, snackTitle } from "@/lib/menu/core";
+import { plateSummary, snackHeading } from "@/lib/menu/core";
 import type { OverrideMap } from "@/lib/menu/planner";
 import type { MenuOverride } from "@/lib/types";
 
 export default function MenuPage() {
-  const { active, today, householdId } = useApp();
+  const { active, today, householdId, prefs } = useApp();
   const [offset, setOffset] = useState(0);
   const [sel, setSel] = useState(today);
   const ws = addDays(weekStart(today), offset * 7);
@@ -22,7 +22,7 @@ export default function MenuPage() {
   const ov = useTable<MenuOverride>("menu_overrides", { match: { household_id: householdId }, range: { col: "date", from: ws, to: addDays(ws, 6) } }, [ws]);
   const overrides: OverrideMap = useMemo(() => Object.fromEntries(ov.rows.map((o) => [`${o.date}:${o.slot}`, o.recipe_slug])), [ov.rows]);
   const date = days.includes(sel) ? sel : days[0];
-  const day = active ? computeDay({ profile: active, date, today, overrides, logs: [] }) : null;
+  const day = active ? computeDay({ profile: active, date, today, overrides, logs: [], prefs }) : null;
   if (!active || !day) return null;
   return (
     <div className="space-y-5">
@@ -42,7 +42,7 @@ export default function MenuPage() {
         ))}
       </div>
 
-      <p className="font-display text-xl font-semibold capitalize">{longDate(date)}</p>
+      <p className="font-display text-xl font-semibold">{longDate(date)}</p>
       <p className="text-sm text-muted tabular">{num(day.targets.kcal)} kcal · {num(day.targets.proteinG)} g de proteína</p>
 
       <ul className="space-y-3">
@@ -52,8 +52,8 @@ export default function MenuPage() {
               <FoodArt art={s.recipe.art} className="h-20 w-24 shrink-0 rounded-2xl" />
               <div className="min-w-0 flex-1">
                 <p className="text-xs text-muted">{s.label} · {time12(s.baseTime)}</p>
-                <p className="font-display text-base font-semibold leading-snug">{s.proteinOnly && s.recipe.kind === "snack" ? snackTitle(s.portion.lines) : s.recipe.name}</p>
-                <p className="mt-1 line-clamp-2 text-xs text-muted">{s.proteinOnly ? "Solo proteína" : plateSummary(s.portion.lines)}</p>
+                <p className="font-display text-base font-semibold leading-snug">{s.recipe.kind === "snack" ? snackHeading(s.recipe, s.portion.lines).title : s.recipe.name}</p>
+                <p className="mt-1 line-clamp-2 text-xs text-muted">{s.recipe.kind === "snack" ? snackHeading(s.recipe, s.portion.lines).detail : plateSummary(s.portion.lines)}</p>
                 <div className="mt-1 flex flex-wrap gap-1.5"><Chip tone="brand">{num(Math.round(s.portion.macros.p))} g proteína</Chip><Chip>{num(Math.round(s.portion.macros.kcal))} kcal</Chip></div>
               </div>
             </Link>

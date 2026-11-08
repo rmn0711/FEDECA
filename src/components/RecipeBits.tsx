@@ -3,7 +3,7 @@ import type { RecipeLine } from "@/lib/menu/types";
 import { num } from "@/lib/format";
 import { Chip } from "./ui";
 
-export function IngredientList({ lines, replaced = {} }: { lines: RecipeLine[]; replaced?: Record<string, string> }) {
+export function IngredientList({ lines, replaced = {}, onDislike }: { lines: RecipeLine[]; replaced?: Record<string, string>; onDislike?: (food: string, name: string) => void }) {
   const views: LineView[] = lineViews(lines);
   return (
     <ul className="space-y-2">
@@ -13,6 +13,7 @@ export function IngredientList({ lines, replaced = {} }: { lines: RecipeLine[]; 
             <p className="font-medium">{v.name}{v.label ? <span className="font-normal text-muted"> · {v.label}</span> : null}</p>
             {replaced[v.food] && <p className="text-xs text-plum">Sustituye a {replaced[v.food]} por seguridad en el embarazo</p>}
             {v.home && <p className="text-xs text-muted">{v.home}</p>}
+            {onDislike && !["especias", "aceite", "limon"].includes(v.food) && <button onClick={() => onDislike(v.food, v.name)} className="mt-1 text-xs text-clay underline">No me gusta esto</button>}
           </div>
           <div className="text-right tabular">
             <p className="font-medium">{v.food === "especias" ? "al gusto" : `${num(v.cookedG)} g`}</p>

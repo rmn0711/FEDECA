@@ -46,7 +46,8 @@ h1, h2, h3, .font-display {
   letter-spacing: -0.01em;
 }
 
-.tabular { font-variant-numeric: tabular-nums; }
+/* Cifras proporcionales: con tabulares la fuente separa demasiado la coma y el punto decimal. */
+.tabular { font-variant-numeric: lining-nums proportional-nums; }
 
 input, select, textarea {
   font: inherit;

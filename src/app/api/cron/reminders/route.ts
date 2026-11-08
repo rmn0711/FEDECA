@@ -9,6 +9,7 @@ import { computeDay } from "@/lib/day";
 import { plateSummary } from "@/lib/menu/core";
 import { reminderText } from "@/lib/nutrition/meals";
 import type { MealLog, MenuOverride, Profile } from "@/lib/types";
+import { buildPrefs, type FoodPrefRow } from "@/lib/prefs";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -35,14 +36,16 @@ export async function GET(req: Request) {
 
   let sent = 0;
   for (const hid of households) {
-    const [{ data: profs }, { data: ovs }] = await Promise.all([
+    const [{ data: profs }, { data: ovs }, { data: prefRows }] = await Promise.all([
       sb.from("profiles").select("*").eq("household_id", hid).eq("onboarding_done", true),
       sb.from("menu_overrides").select("*").eq("household_id", hid).gte("date", date).lte("date", date),
+      sb.from("food_preferences").select("food_key,pref").eq("household_id", hid),
     ]);
+    const prefs = buildPrefs((prefRows ?? []) as Pick<FoodPrefRow, "food_key" | "pref">[]);
     const overrides = Object.fromEntries(((ovs ?? []) as MenuOverride[]).map((o) => [`${o.date}:${o.slot}`, o.recipe_slug]));
     for (const p of (profs ?? []) as Profile[]) {
       const { data: logs } = await sb.from("meal_logs").select("*").eq("profile_id", p.id).eq("date", date);
-      const day = computeDay({ profile: p, date, today: date, overrides, logs: (logs ?? []) as MealLog[] });
+      const day = computeDay({ profile: p, date, today: date, overrides, logs: (logs ?? []) as MealLog[], prefs });
       for (const s of day.slots) {
         if (s.status !== "pending" || s.dropped) continue;
         const untilMeal = timeToMin(s.time) - nowMin;

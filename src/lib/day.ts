@@ -3,6 +3,7 @@ import { RECIPE_BY_SLUG } from "@/data/recipes";
 import { adaptForPregnancy } from "./menu/adapt";
 import { scaleRecipe, type Portion } from "./menu/core";
 import { planDay, type OverrideMap } from "./menu/planner";
+import { NO_PREFS, type FoodPrefs } from "./prefs";
 import type { Recipe } from "./menu/types";
 import { adjustSlotsForAlcohol } from "./nutrition/alcohol";
 import { redistributeProtein, rescheduleDay, type ScheduledSlot } from "./nutrition/meals";
@@ -45,11 +46,12 @@ export interface DayInput {
   overrides: OverrideMap;
   logs: MealLog[]; // solo de ese perfil y fecha
   alcohol?: AlcoholLog[]; // del día
+  prefs?: FoodPrefs;
 }
 
-export function computeDay({ profile, date, today, overrides, logs, alcohol = [] }: DayInput): DayState {
+export function computeDay({ profile, date, today, overrides, logs, alcohol = [], prefs = NO_PREFS }: DayInput): DayState {
   const targets = dayTargets(profile, date, today);
-  const plan = planDay(date, overrides);
+  const plan = planDay(date, overrides, prefs);
   const byslot = new Map(logs.map((l) => [l.slot, l]));
   const states = SLOTS.map((s) => {
     const l = byslot.get(s.id);

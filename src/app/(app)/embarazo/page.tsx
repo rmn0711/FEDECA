@@ -1,12 +1,13 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button, Card, Chip, H1, H2, Notice, Stat, TextArea } from "@/components/ui";
+import { Button, Card, Chip, H1, H2, Notice, TextArea } from "@/components/ui";
 import { ProfileSwitch } from "@/components/ProfileSwitch";
+import { BabyCard } from "@/components/BabyCard";
 import { useApp } from "@/lib/app-context";
 import { longDate, num } from "@/lib/format";
 import { useTable } from "@/lib/hooks";
-import { NUTRIENT_FOCUS, PREGNANCY_DISCLAIMER, PREGNANCY_SYMPTOM_REMINDER, symptomNeedsAttention, gestationalDays } from "@/lib/nutrition/pregnancy";
+import { NUTRIENT_FOCUS, PREGNANCY_DISCLAIMER, PREGNANCY_SYMPTOM_REMINDER, symptomNeedsAttention } from "@/lib/nutrition/pregnancy";
 import { CAFFEINE_ITEMS, CAFFEINE_MAX_MG, caffeineStatus, caffeineTotal, FOOD_SAFETY_RULES } from "@/lib/nutrition/safety";
 import { dayTargets } from "@/lib/nutrition/targets";
 import type { SymptomNote } from "@/lib/types";
@@ -21,7 +22,6 @@ export default function PregnancyPage() {
   useEffect(() => { if (active && active.mode !== "pregnancy") router.replace("/"); }, [active, router]);
   if (!active || active.mode !== "pregnancy") return null;
   const t = dayTargets(active, today, today);
-  const days = active.due_date ? gestationalDays(active.due_date, today) : 0;
   const mg = caffeineTotal(Object.entries(cafe).map(([key, qty]) => ({ key, qty })));
   const status = caffeineStatus(mg);
 
@@ -35,8 +35,8 @@ export default function PregnancyPage() {
   return (
     <div className="space-y-6">
       <header className="space-y-3"><ProfileSwitch /><H1>Embarazo</H1></header>
-      <Card tone="plum" className="space-y-3">
-        <div className="grid grid-cols-3 gap-3"><Stat label="Semana" value={t.week} sub={`${Math.floor(days / 7)} sem + ${days % 7} d`} /><Stat label="Trimestre" value={t.trimester} /><Stat label="Parto" value={active.due_date ? longDate(active.due_date).split(" ").slice(1).join(" ") : "—"} /></div>
+      {active.due_date && <BabyCard dueDate={active.due_date} today={today} />}
+      <Card tone="plum" className="space-y-2">
         <p className="text-sm">Calorías de hoy: <span className="font-medium tabular">{num(t.kcal)} kcal</span> (mantenimiento{t.addKcal ? ` + ${t.addKcal}` : " + 0"}). Sin déficit. Proteína: <span className="font-medium tabular">{num(t.proteinG)} g</span> repartidos en las 6 tomas.</p>
       </Card>
       <Notice tone="plum">{PREGNANCY_DISCLAIMER}</Notice>

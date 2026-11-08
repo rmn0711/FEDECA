@@ -1,13 +1,14 @@
 "use client";
 import Link from "next/link";
 import { useState } from "react";
-import { Activity, Baby, ChevronRight, Dumbbell, LineChart, ShoppingBasket, UtensilsCrossed, Wine, Droplets, Plus, Flame } from "lucide-react";
+import { Activity, Baby, ChevronRight, Dumbbell, LineChart, ShoppingBasket, ThumbsUp, UtensilsCrossed, Wine, Droplets, Plus, Flame } from "lucide-react";
 import { Bar, Button, Card, Chip, Eyebrow, H1, H2, Notice, Segments, Stat } from "@/components/ui";
 import { FoodArt } from "@/components/FoodArt";
 import { ProfileSwitch } from "@/components/ProfileSwitch";
+import { BabyCard } from "@/components/BabyCard";
 import { useApp } from "@/lib/app-context";
 import { addDays, g, num, time12, weekday, WEEKDAY_SHORT, weekStart } from "@/lib/format";
-import { plateSummary } from "@/lib/menu/core";
+import { plateSummary, snackHeading } from "@/lib/menu/core";
 import { proteinShortfallAlert } from "@/lib/nutrition/calc";
 import { PREGNANCY_DISCLAIMER, POST_DINNER_PREGNANCY_TIP } from "@/lib/nutrition/pregnancy";
 import { PRE_WORKOUT_TIP, POST_WORKOUT_TIP } from "@/lib/nutrition/meals";
@@ -47,6 +48,7 @@ export default function Home() {
   const links = [
     { href: "/menu", label: "Menú de la semana", Icon: UtensilsCrossed },
     { href: "/mercado", label: "Lista de mercado", Icon: ShoppingBasket },
+    { href: "/gustos", label: "Lo que me gusta", Icon: ThumbsUp },
     ...(!pregnant ? [{ href: "/ejercicio", label: "Ejercicio y rodilla", Icon: Dumbbell }] : []),
     { href: "/progreso", label: "Mi progreso", Icon: LineChart },
     ...(!pregnant ? [{ href: "/alcohol", label: "Alcohol", Icon: Wine }] : []),
@@ -59,6 +61,8 @@ export default function Home() {
         <ProfileSwitch />
         <H1>Hola, {active.name}</H1>
       </header>
+
+      {pregnant && active.due_date && <Link href="/embarazo" className="block"><BabyCard dueDate={active.due_date} today={today} compact /></Link>}
 
       {alerts.map((a) => <Notice key={a.title} tone={a.tone} title={a.title}>{a.text}</Notice>)}
 
@@ -97,8 +101,8 @@ export default function Home() {
           <div className="flex gap-4">
             <FoodArt art={next.recipe.art} className="h-24 w-32 shrink-0 rounded-2xl" />
             <div className="min-w-0">
-              <Link href={`/receta/${next.recipe.slug}?slot=${next.slot}`} className="font-display text-lg font-semibold leading-snug underline-offset-4 hover:underline">{next.recipe.kind === "snack" ? plateSummary(next.portion.lines, 3) : next.recipe.name}</Link>
-              <p className="mt-1 text-sm text-ink/80">{next.recipe.kind === "snack" ? "Solo proteína" : plateSummary(next.portion.lines)}</p>
+              <Link href={`/receta/${next.recipe.slug}?slot=${next.slot}`} className="font-display text-lg font-semibold leading-snug underline-offset-4 hover:underline">{next.recipe.kind === "snack" ? snackHeading(next.recipe, next.portion.lines).title : next.recipe.name}</Link>
+              <p className="mt-1 text-sm text-ink/80">{next.recipe.kind === "snack" ? snackHeading(next.recipe, next.portion.lines).detail : plateSummary(next.portion.lines)}</p>
               <p className="mt-1 text-sm font-medium tabular">{g(Math.round(next.portion.macros.p))} de proteína · {num(Math.round(next.portion.macros.kcal))} kcal</p>
             </div>
           </div>

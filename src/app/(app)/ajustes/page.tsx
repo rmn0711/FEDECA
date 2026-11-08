@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { Button, Card, Chip, Field, H1, H2, Input, Notice, NumField, Toggle, cx } from "@/components/ui";
 import { ProfileSwitch } from "@/components/ProfileSwitch";
 import { useApp } from "@/lib/app-context";
@@ -62,6 +63,8 @@ export default function Settings() {
         </div>
         <Button variant="ghost" size="sm" onClick={() => setTimes(defaultMealTimes())}>Restablecer horario</Button>
       </Card>
+
+      <Link href="/gustos" className="block rounded-3xl bg-surface p-4 font-medium">Gustos de comida: lo que me gusta y lo que no</Link>
 
       {!pregnant && (
         <Card className="space-y-3">

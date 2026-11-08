@@ -319,11 +319,12 @@ interface SnackSpec {
   steps: string[];
   time?: number;
   pregNote?: string;
+  dish?: string;
 }
 
 function buildSnacks(): RecipeDef[] {
   const specs: SnackSpec[] = [];
-  const s = (family: string, lines: RecipeLine[], steps: string[], time = 5, pregNote?: string) => specs.push({ name: "", family, lines, steps, time, pregNote });
+  const s = (family: string, lines: RecipeLine[], steps: string[], time = 5, pregNote?: string, dish?: string) => specs.push({ name: "", family, lines, steps, time, pregNote, dish });
   const P = (food: string, g: number, label?: string) => L(food, g, "protein", label);
 
   // Carnes frías / cocidas
@@ -370,13 +371,32 @@ function buildSnacks(): RecipeDef[] {
   s("bocachico", [P("bocachico", 120, "asado, frío")], ["Usa bocachico asado del día anterior; desmenúzalo y aliña con limón."], 3);
   s("mojarra", [P("mojarra", 120, "al horno, frío")], ["Desmenuza mojarra horneada del día anterior y aliña con limón."], 3);
 
+  // Comida real en trozos, para llevar (media mañana): cerdo, res, pollo, pavo, pescado y huevo
+  const PORK = "Cerdo siempre bien cocido, sin partes rosadas.";
+  s("cerdo", [P("cerdo", 115, "en trozos")], ["Corta el lomo de cerdo magro en cubos de 2 cm y sazona con ajo, limón, sal y pimienta.", "Saltea en sartén caliente con 1 cucharadita de aceite 8–10 minutos hasta que esté dorado y bien cocido.", "Guarda en un recipiente: sirve frío o tibio."], 15, PORK, "Cerdo magro en trozos al ajillo");
+  s("cerdo", [P("cerdo", 130, "al horno")], ["Calienta el horno a 200 °C.", "Mezcla los cubos de lomo magro con ajo en polvo, orégano, sal y limón.", "Hornea 18–20 minutos moviendo a la mitad; debe quedar bien cocido por dentro."], 25, PORK, "Cerdo magro al horno con orégano");
+  s("cerdo", [P("cerdo", 110, "en tiras")], ["Corta el lomo en tiras finas contra la fibra.", "Cocina en sartén muy caliente 4–5 minutos con comino y sal hasta que esté bien cocido.", "Termina con unas gotas de limón."], 10, PORK, "Tiras de cerdo magro con comino");
+  s("cerdo", [P("cerdo", 75, "en trozos"), P("huevo", 100, "duros")], ["Prepara los trozos de cerdo magro (saltéalos 8 minutos hasta que estén bien cocidos).", "Cuece 2 huevos 10 minutos con yema firme.", "Come juntos."], 15, PORK, "Cerdo magro en trozos con huevo duro");
+  s("res", [P("res", 105, "en trozos")], ["Corta la res magra (sobrebarriga o lomo) en cubos de 2 cm.", "Sazona con sal, ajo y comino y saltea 6–8 minutos a fuego alto hasta que esté bien cocida.", "Deja enfriar y guarda."], 12, undefined, "Res magra en trozos a la plancha");
+  s("res", [P("res", 105, "desmechada")], ["Hierve la res magra con cebolla y ajo 40 minutos hasta que esté muy tierna.", "Desmecha y mezcla con limón, sal y pimienta.", "Perfecta para meal prep: dura 3–4 días en nevera."], 45, undefined, "Res magra desmechada con limón");
+  s("res", [P("res", 80, "en tiras"), P("clara", 99, "cocidas")], ["Saltea las tiras de res magra 4–5 minutos con ajo y sal.", "Agrega 3 claras y revuelve hasta que estén firmes."], 12, undefined, "Res magra en tiras con claras revueltas");
+  s("pollo", [P("pechuga", 120, "en cubos")], ["Corta la pechuga en cubos y sazona con ajo, limón y pimienta.", "Dora en sartén 6–7 minutos hasta que esté bien cocida.", "Guarda en un recipiente."], 12, undefined, "Pollo en cubos al limón");
+  s("pollo", [P("muslo", 120, "sin piel")], ["Sazona el muslo deshuesado y sin piel con ajo, sal y paprika.", "Cocina 10–12 minutos por lado hasta que no haya partes rosadas.", "Corta en trozos."], 25, undefined, "Pollo al ajillo en trozos");
+  s("pollo", [P("pechuga", 120, "en brochetas")], ["Ensarta cubos de pechuga en palitos con cebolla.", "Asa 10–12 minutos girando hasta que estén bien cocidos.", "Puedes comerlas frías."], 20, undefined, "Brochetas de pollo");
+  s("pavo", [P("pavo", 115, "en tiras")], ["Corta la pechuga de pavo en tiras y sazona con limón, sal y pimienta.", "Cocina en sartén 5–6 minutos hasta que esté bien cocida."], 12, undefined, "Pavo en tiras a la plancha");
+  s("res", [P("molida", 110, "en albóndigas")], ["Mezcla la carne molida magra con cebolla rallada, sal, comino y ajo.", "Forma bolitas pequeñas y hornea 15 minutos a 200 °C hasta que no queden rosadas.", "Sirve tibias."], 25, undefined, "Albóndigas pequeñas de res magra");
+  s("camaron", [P("camaron", 130, "al ajillo")], ["Saltea ajo en 1 cucharadita de aceite.", "Agrega los camarones y cocina 3–4 minutos hasta que estén bien rosados y firmes.", "Termina con limón."], 10, undefined, "Camarones al ajillo");
+  s("salmon", [P("salmon", 135, "al horno")], ["Hornea el salmón sazonado con limón y sal a 200 °C por 15 minutos, hasta que esté bien cocido.", "Desmenuza en trozos grandes."], 20, undefined, "Salmón al horno en trozos");
+  s("huevo", [P("huevo", 100, "duros"), P("pavo", 60, "en cubos")], ["Cuece 2 huevos 10 minutos (yema firme).", "Corta la pechuga de pavo cocida en cubos y combina."], 12, undefined, "Huevo duro con cubos de pavo");
+
   // Nombres: derivados de los ingredientes
   return specs.map((sp, i) => {
     const title = snackTitle(sp.lines);
     const base = title.split(" = ")[0];
     return make({
-      name: base,
-      slug: `merienda-${String(i + 1).padStart(2, "0")}-${slugify(base).slice(0, 50)}`,
+      name: sp.dish ?? base,
+      dish: sp.dish,
+      slug: `merienda-${String(i + 1).padStart(2, "0")}-${slugify(sp.dish ?? base).slice(0, 50)}`,
       kind: "snack",
       family: sp.family,
       art: sp.family === "whey" ? "batido" : sp.family === "lacteo" ? "yogur" : sp.family === "huevo" ? "huevo" : sp.family === "atun" || sp.family === "sardina" ? "atun" : sp.family === "camaron" ? "camaron" : sp.family === "bocachico" || sp.family === "mojarra" ? "pescado" : "pollo",

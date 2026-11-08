@@ -11,7 +11,7 @@ import type { AlcoholLog, DailyCheck, MealLog, MenuOverride } from "./types";
 
 /** Datos y acciones del día de hoy para el perfil activo. */
 export function useToday() {
-  const { active, householdId, today, nowTime } = useApp();
+  const { active, householdId, today, nowTime, prefs } = useApp();
   const ws = weekStart(today);
   const we = addDays(ws, 6);
   const from60 = addDays(today, -60);
@@ -25,8 +25,8 @@ export function useToday() {
   const stats = useMemo(() => dayStats(logsQ.rows), [logsQ.rows]);
   const day = useMemo(() => {
     if (!active) return null;
-    return computeDay({ profile: active, date: today, today, overrides, logs: logsQ.rows.filter((l) => l.date === today), alcohol: alc.rows.filter((a) => a.date === today) });
-  }, [active, today, overrides, logsQ.rows, alc.rows]);
+    return computeDay({ profile: active, date: today, today, overrides, logs: logsQ.rows.filter((l) => l.date === today), alcohol: alc.rows.filter((a) => a.date === today), prefs });
+  }, [active, today, overrides, logsQ.rows, alc.rows, prefs]);
   const check = checks.rows.find((c) => c.date === today) ?? null;
 
   async function eat(s: SlotView, factor = 1) {
@@ -45,9 +45,9 @@ export function useToday() {
   }
   /** Cambia la receta por otra con macros equivalentes (el menú es compartido: aplica a los dos). */
   async function swap(s: SlotView): Promise<boolean> {
-    const week = Object.values(planWeek(today, overrides)).flat();
+    const week = Object.values(planWeek(today, overrides, prefs)).flat();
     const base = RECIPE_BY_SLUG[s.recipe.slug];
-    const sub = findSubstitute(base, week);
+    const sub = findSubstitute(base, week, { prefs });
     if (!sub) return false;
     await ov.upsert({ household_id: householdId, date: today, slot: s.slot, recipe_slug: sub.slug, reason: "cambio" }, ["household_id", "date", "slot"]);
     return true;

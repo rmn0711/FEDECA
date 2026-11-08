@@ -73,6 +73,10 @@ tests/              vitest
 
 ## Decisiones y límites a tener en cuenta
 
+- **Gustos de comida** (`/gustos`): "No me gusta" saca el alimento de desayunos, almuerzos, cenas, meriendas y lista de mercado; "Me gusta" lo prioriza. Como el menú es uno solo, la exclusión de cualquiera de los dos aplica a ambos. Si los gustos dejan menos de 7 opciones en una toma, se ignoran en esa toma y se avisa. Migración: `0004_food_preferences.sql`.
+- **Meriendas de proteína**: la media mañana es comida real (cerdo, res, pollo, pavo, pescado, huevo en trozos) casi todos los días; la media tarde alterna con lácteos y batidos.
+- **Bebé**: la comparación de tamaño por semana (`src/lib/nutrition/baby.ts`) usa promedios de referencia; evita alimentos excluidos del menú.
+
 - **Reparto de proteína**: las seis tomas del plan (30/30/40/30/30/20 g) suman 180 g; con una meta de 175 g se usan esos gramos tal cual (tolerancia de 3 %), y con otras metas (la esposa) se escalan.
 - **Calorías**: Mifflin-St Jeor × factor por días de entrenamiento − déficit 500–750 (según IMC); piso de 1.800 kcal en ambos perfiles. Los días de pierna suman +25 g de carbohidrato antes y después y se compensan en los demás días.
 - **Recetas**: los macros se calculan desde `src/data/foods.ts` (valores aproximados tipo USDA/ICBF). Revísalos con tu nutricionista. Las exclusiones (tomate, pepino, papaya, brócoli, coliflor) se verifican por test sobre todo el texto de las recetas.
