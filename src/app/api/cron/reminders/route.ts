@@ -8,6 +8,8 @@ import { bogotaParts, timeToMin } from "@/lib/format";
 import { computeDay } from "@/lib/day";
 import { plateSummary } from "@/lib/menu/core";
 import { reminderText } from "@/lib/nutrition/meals";
+import { marinateReminder, prepForDay } from "@/lib/menu/prep";
+import { addDays } from "@/lib/format";
 import type { MealLog, MenuOverride, Profile } from "@/lib/types";
 import { buildPrefs, type FoodPrefRow } from "@/lib/prefs";
 
@@ -67,6 +69,35 @@ export async function GET(req: Request) {
           }),
         );
       }
+    }
+  }
+  // Aviso de las 8 p. m.: qué adobar para mañana (una vez por hogar).
+  if (nowMin >= 20 * 60 && nowMin < 20 * 60 + 5) {
+    const tomorrow = addDays(date, 1);
+    for (const hid of households) {
+      const [{ data: profs }, { data: ovs }, { data: prefRows }] = await Promise.all([
+        sb.from("profiles").select("*").eq("household_id", hid).eq("onboarding_done", true),
+        sb.from("menu_overrides").select("*").eq("household_id", hid).eq("date", tomorrow),
+        sb.from("food_preferences").select("food_key,pref").eq("household_id", hid),
+      ]);
+      const list = ((profs ?? []) as Profile[]).sort((a) => (a.slug === "jose" ? -1 : 1));
+      if (!list.length) continue;
+      const overrides = Object.fromEntries(((ovs ?? []) as MenuOverride[]).map((o) => [`${o.date}:${o.slot}`, o.recipe_slug]));
+      const msg = marinateReminder(prepForDay({ date: tomorrow, profiles: list, overrides, prefs: buildPrefs((prefRows ?? []) as Pick<FoodPrefRow, "food_key" | "pref">[]), today: date }));
+      if (!msg) continue;
+      const { error: dup } = await sb.from("push_sent").insert({ profile_id: list[0].id, date, slot: 90 });
+      if (dup) continue;
+      await Promise.all(
+        subs.filter((x) => x.household_id === hid).map(async (t) => {
+          try {
+            await webpush.sendNotification({ endpoint: t.endpoint, keys: { p256dh: t.p256dh, auth: t.auth } }, JSON.stringify({ ...msg, url: "/manana", tag: `prep-${tomorrow}` }));
+            sent++;
+          } catch (e) {
+            const status = (e as { statusCode?: number }).statusCode;
+            if (status === 404 || status === 410) await sb.from("push_subscriptions").delete().eq("id", t.id);
+          }
+        }),
+      );
     }
   }
   return NextResponse.json({ sent, at: `${date} ${time}` });

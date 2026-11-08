@@ -75,6 +75,7 @@ tests/              vitest
 
 - **Gustos de comida** (`/gustos`): "No me gusta" saca el alimento de desayunos, almuerzos, cenas, meriendas y lista de mercado; "Me gusta" lo prioriza. Como el menú es uno solo, la exclusión de cualquiera de los dos aplica a ambos. Si los gustos dejan menos de 7 opciones en una toma, se ignoran en esa toma y se avisa. Migración: `0004_food_preferences.sql`.
 - **Meriendas de proteína**: la media mañana es comida real (cerdo, res, pollo, pavo, pescado, huevo en trozos) casi todos los días; la media tarde alterna con lácteos y batidos.
+- **Para mañana** (`/manana`): qué adobar esta noche (peso crudo de cada uno y total, adobo, ventana de horas en nevera), qué remojar y a qué hora empezar a cocinar. Los adobos cortos (pescado, camarón) se mandan a la mañana. A las 8 p. m. el cron envía un aviso push con lo que hay que adobar.
 - **Bebé**: la comparación de tamaño por semana (`src/lib/nutrition/baby.ts`) usa promedios de referencia; evita alimentos excluidos del menú.
 
 - **Reparto de proteína**: las seis tomas del plan (30/30/40/30/30/20 g) suman 180 g; con una meta de 175 g se usan esos gramos tal cual (tolerancia de 3 %), y con otras metas (la esposa) se escalan.

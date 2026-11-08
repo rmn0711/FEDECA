@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useState } from "react";
-import { Activity, Baby, ChevronRight, Dumbbell, LineChart, ShoppingBasket, ThumbsUp, UtensilsCrossed, Wine, Droplets, Plus, Flame } from "lucide-react";
+import { Activity, Baby, ChevronRight, Dumbbell, LineChart, ShoppingBasket, ThumbsUp, UtensilsCrossed, ChefHat, Wine, Droplets, Plus, Flame } from "lucide-react";
 import { Bar, Button, Card, Chip, Eyebrow, H1, H2, Notice, Segments, Stat } from "@/components/ui";
 import { FoodArt } from "@/components/FoodArt";
 import { ProfileSwitch } from "@/components/ProfileSwitch";
@@ -47,6 +47,7 @@ export default function Home() {
 
   const links = [
     { href: "/menu", label: "Menú de la semana", Icon: UtensilsCrossed },
+    { href: "/manana", label: "Preparar para mañana", Icon: ChefHat },
     { href: "/mercado", label: "Lista de mercado", Icon: ShoppingBasket },
     { href: "/gustos", label: "Lo que me gusta", Icon: ThumbsUp },
     ...(!pregnant ? [{ href: "/ejercicio", label: "Ejercicio y rodilla", Icon: Dumbbell }] : []),
@@ -63,6 +64,13 @@ export default function Home() {
       </header>
 
       {pregnant && active.due_date && <Link href="/embarazo" className="block"><BabyCard dueDate={active.due_date} today={today} compact /></Link>}
+
+      {nowTime >= "17:00" && (
+        <Link href="/manana" className="flex items-center justify-between gap-3 rounded-3xl bg-sun-soft p-4">
+          <span><span className="block font-display text-lg font-semibold">Prepara la comida de mañana</span><span className="block text-sm">Qué adobar esta noche y a qué hora cocinar mañana.</span></span>
+          <ChevronRight size={18} aria-hidden />
+        </Link>
+      )}
 
       {alerts.map((a) => <Notice key={a.title} tone={a.tone} title={a.title}>{a.text}</Notice>)}
 
