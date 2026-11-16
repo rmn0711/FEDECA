@@ -2,10 +2,10 @@
 import { useMemo, useState } from "react";
 import { Card, cx, H1, H2, Notice, SegmentedControl } from "@/components/ui";
 import { useApp } from "@/lib/app-context";
-import { dayTargets } from "@/lib/nutrition/targets";
+import { computeDay } from "@/lib/day";
 import { addDays, shortDate, weekStart } from "@/lib/format";
 import { useTable } from "@/lib/hooks";
-import { planWeek, type OverrideMap } from "@/lib/menu/planner";
+import type { OverrideMap } from "@/lib/menu/planner";
 import { buildShoppingList, mealPrepTips, type PersonWeek } from "@/lib/menu/shopping";
 import { AISLE_ORDER } from "@/lib/menu/types";
 import type { MenuOverride } from "@/lib/types";
@@ -17,10 +17,9 @@ export default function MarketPage() {
   const week = Array.from({ length: 7 }, (_, i) => addDays(ws, i));
   const ov = useTable<MenuOverride>("menu_overrides", { match: { household_id: householdId }, range: { col: "date", from: ws, to: addDays(ws, 6) } }, [ws]);
   const overrides: OverrideMap = useMemo(() => Object.fromEntries(ov.rows.map((o) => [`${o.date}:${o.slot}`, o.recipe_slug])), [ov.rows]);
-  const plan = useMemo(() => planWeek(ws, overrides, prefs), [ws, overrides, prefs]);
-  const people: PersonWeek[] = useMemo(() => profiles.map((p) => ({ plan, pregnant: p.mode === "pregnancy", targets: Object.fromEntries(week.map((d) => [d, dayTargets(p, d, today)])) })), [profiles, plan, week, today]);
-  const list = useMemo(() => buildShoppingList(people), [people]);
-  const tips = useMemo(() => mealPrepTips(people, week), [people, week]);
+  const people: PersonWeek[] = profiles.map((p) => ({ pregnant: p.mode === "pregnancy", days: Object.fromEntries(week.map((d) => [d, computeDay({ profile: p, date: d, today, overrides, logs: [], prefs })])) }));
+  const list = buildShoppingList(people);
+  const tips = mealPrepTips(people, week);
 
   return (
     <div className="space-y-6">

@@ -24,6 +24,12 @@ export interface DayTargets {
   trimester?: 1 | 2 | 3;
   week?: number;
   addKcal?: number;
+  /** Tipo de día del plan del nutricionista (1, 2 o 3) si está activo. */
+  planDayType?: 1 | 2 | 3;
+  /** kcal agregadas para no bajar del mínimo seguro. */
+  planFloorKcal?: number;
+  /** kcal que faltan para el mínimo seguro después del complemento. */
+  planBelowFloor?: number;
 }
 
 export function dayTargets(p: Profile, date: string, today = date): DayTargets {

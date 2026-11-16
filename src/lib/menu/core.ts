@@ -183,3 +183,17 @@ export function snackHeading(recipe: Pick<RecipeDef, "dish">, lines: RecipeLine[
   const full = snackTitle(lines);
   return { title: recipe.dish ?? full.split(" = ")[0], detail: full };
 }
+
+/** Porción de una toma con gramajes fijos (plan del nutricionista): solo sube la proteína si hubo que redistribuir. */
+export function fixedPortion(recipe: Recipe, proteinG: number): Portion {
+  const pRole = sumMacros(recipe.lines.filter((l) => l.role === "protein")).p;
+  const pAll = recipe.macros.p;
+  const kp = pRole > 0 && proteinG > pAll + 1 ? Math.min(1.6, (proteinG - (pAll - pRole)) / pRole) : 1;
+  const factors: Record<Role, number> = { protein: kp, carb: 1, fat: 1, veg: 1, fixed: 1 };
+  const scaled = recipe.lines.map((l) => {
+    const g = Math.round(l.g * factors[l.role]);
+    const food = FOODS[l.food];
+    return { ...l, g, rawG: food.rawYield ? Math.round(g / food.rawYield) : g };
+  });
+  return { factors, lines: scaled, macros: sumMacros(scaled) };
+}

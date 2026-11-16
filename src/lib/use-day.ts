@@ -6,8 +6,9 @@ import { addDays, weekStart } from "./format";
 import { useTable } from "./hooks";
 import { findSubstitute, planWeek, type OverrideMap } from "./menu/planner";
 import { RECIPE_BY_SLUG } from "@/data/recipes";
+import { planAlternative } from "./plan/ciclo3";
 import { dayStats, streak } from "./stats";
-import type { AlcoholLog, DailyCheck, MealLog, MenuOverride } from "./types";
+import type { AlcoholLog, DailyCheck, MealLog, MenuOverride, SlotId } from "./types";
 
 /** Datos y acciones del día de hoy para el perfil activo. */
 export function useToday() {
@@ -45,6 +46,13 @@ export function useToday() {
   }
   /** Cambia la receta por otra con macros equivalentes (el menú es compartido: aplica a los dos). */
   async function swap(s: SlotView): Promise<boolean> {
+    // Plan del nutricionista: otra opción permitida para esa toma, solo para este perfil.
+    if (s.recipe.slug.startsWith("plan-")) {
+      const alt = planAlternative(s.recipe.slug, prefs);
+      if (!alt) return false;
+      await ov.upsert({ household_id: householdId, date: today, slot: (10 + s.slot) as SlotId, recipe_slug: alt, reason: "plan" }, ["household_id", "date", "slot"]);
+      return true;
+    }
     const week = Object.values(planWeek(today, overrides, prefs)).flat();
     const base = RECIPE_BY_SLUG[s.recipe.slug];
     const sub = findSubstitute(base, week, { prefs });

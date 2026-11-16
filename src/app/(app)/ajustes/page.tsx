@@ -65,6 +65,7 @@ export default function Settings() {
       </Card>
 
       <Link href="/gustos" className="block rounded-3xl bg-surface p-4 font-medium">Gustos de comida: lo que me gusta y lo que no</Link>
+      {!pregnant && <Link href="/plan" className="block rounded-3xl bg-surface p-4 font-medium">Plan del nutricionista (ciclo de 3 días): {active.diet_plan === "app" ? "apagado" : "activo"}</Link>}
 
       {!pregnant && (
         <Card className="space-y-3">

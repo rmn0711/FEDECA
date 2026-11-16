@@ -13,7 +13,7 @@ const jose: Profile = {
   id: "j", household_id: "h", slug: "jose", name: "Jose", mode: "fat_loss", sex: "male", age: 35, height_cm: 178,
   start_weight_kg: 123, current_weight_kg: 123, goal_weight_kg: 95, pre_pregnancy_weight_kg: null, due_date: null,
   waist_cm: 120, hip_cm: 112, neck_cm: 43, training_time: "17:30", training_days: [1, 2, 4, 5], training_place: "gym",
-  uses_glp1: false, protein_anchor_weight_kg: 123, meal_times: defaultMealTimes(), onboarding_done: true, medical_ack: true,
+  uses_glp1: false, protein_anchor_weight_kg: 123, meal_times: defaultMealTimes(), onboarding_done: true, medical_ack: true, diet_plan: "app",
 };
 const esposa: Profile = { ...jose, id: "e", slug: "esposa", name: "Esposa", mode: "pregnancy", sex: "female", age: 30, height_cm: 163, start_weight_kg: null, current_weight_kg: 62, pre_pregnancy_weight_kg: 58, due_date: "2027-04-15", training_days: [], training_time: null, training_place: null, protein_anchor_weight_kg: null };
 
@@ -136,10 +136,9 @@ describe("planificador", () => {
 
 describe("lista de mercado y meal prep", () => {
   const week = Array.from({ length: 7 }, (_, i) => addDays("2026-11-09", i));
-  const plan = planWeek(week[0]);
   const persons = [
-    { plan, targets: Object.fromEntries(week.map((d) => [d, dayTargets(jose, d)])), pregnant: false },
-    { plan, targets: Object.fromEntries(week.map((d) => [d, dayTargets(esposa, d, "2026-11-08")])), pregnant: true },
+    { days: Object.fromEntries(week.map((d) => [d, computeDay({ profile: jose, date: d, today: d, overrides: {}, logs: [] })])), pregnant: false },
+    { days: Object.fromEntries(week.map((d) => [d, computeDay({ profile: esposa, date: d, today: "2026-11-08", overrides: {}, logs: [] })])), pregnant: true },
   ];
   it("agrupa por sección y suma ambos perfiles", () => {
     const solo = buildShoppingList([persons[0]]);

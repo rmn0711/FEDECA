@@ -1,7 +1,8 @@
 // Estado completo de un día para un perfil: horario, porciones, redistribución y alcohol.
 import { RECIPE_BY_SLUG } from "@/data/recipes";
 import { adaptForPregnancy } from "./menu/adapt";
-import { scaleRecipe, type Portion } from "./menu/core";
+import { fixedPortion, scaleRecipe, type Portion } from "./menu/core";
+import { planDay as nutriPlanDay, usesPlan, type PlanDay } from "./plan/ciclo3";
 import { planDay, type OverrideMap } from "./menu/planner";
 import { NO_PREFS, type FoodPrefs } from "./prefs";
 import type { Recipe } from "./menu/types";
@@ -50,8 +51,24 @@ export interface DayInput {
 }
 
 export function computeDay({ profile, date, today, overrides, logs, alcohol = [], prefs = NO_PREFS }: DayInput): DayState {
-  const targets = dayTargets(profile, date, today);
+  const baseTargets = dayTargets(profile, date, today);
   const plan = planDay(date, overrides, prefs);
+  // Plan del nutricionista (Jose): gramajes fijos por toma según el tipo de día.
+  const nutri: PlanDay | null = usesPlan(profile) ? nutriPlanDay({ profile, date, prefs, overrides, sharedSlugs: plan }) : null;
+  const targets: DayTargets = nutri
+    ? {
+        ...baseTargets,
+        kcal: nutri.kcal,
+        proteinG: nutri.protein,
+        proteinSlots: nutri.recipes.map((r) => Math.round(r.macros.p)),
+        kcalSlots: nutri.recipes.map((r) => Math.round(r.macros.kcal)),
+        carbDeltaPerMealG: 0,
+        glp1: false,
+        planDayType: nutri.type,
+        planFloorKcal: nutri.floorApplied,
+        planBelowFloor: nutri.belowFloor,
+      }
+    : baseTargets;
   const byslot = new Map(logs.map((l) => [l.slot, l]));
   const states = SLOTS.map((s) => {
     const l = byslot.get(s.id);
@@ -66,11 +83,11 @@ export function computeDay({ profile, date, today, overrides, logs, alcohol = []
   const kcalSlots = alcoholKcal > 0 && pending.length ? adjustSlotsForAlcohol(targets.kcalSlots, redis.targets, pending, alcoholKcal) : targets.kcalSlots;
 
   const slots: SlotView[] = SLOTS.map((def, i) => {
-    const base = RECIPE_BY_SLUG[plan[i]];
+    const base = nutri ? nutri.recipes[i] : RECIPE_BY_SLUG[plan[i]];
     const recipe = profile.mode === "pregnancy" ? adaptForPregnancy(base) : base;
     const log = byslot.get(def.id);
     const proteinG = redis.targets[i] > 0 ? redis.targets[i] : targets.proteinSlots[i];
-    const portion = scaleRecipe(recipe, { proteinG, kcal: kcalSlots[i] });
+    const portion = nutri ? fixedPortion(recipe, proteinG) : scaleRecipe(recipe, { proteinG, kcal: kcalSlots[i] });
     return {
       slot: def.id,
       label: def.label,

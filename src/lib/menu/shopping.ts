@@ -1,17 +1,13 @@
 // Lista de mercado semanal (suma de las porciones de ambos perfiles) y sugerencias de meal prep.
 import { FOODS } from "@/data/foods";
-import { RECIPE_BY_SLUG } from "@/data/recipes";
 import { num } from "../format";
-import { pregnancyView } from "../nutrition/safety";
-import type { DayTargets } from "../nutrition/targets";
-import { scaleRecipe } from "./core";
 import { AISLE_ORDER, type Aisle, type RecipeLine } from "./types";
 
+type DayLines = { slots: { portion: { lines: (RecipeLine & { rawG: number })[] } }[] };
+
 export interface PersonWeek {
-  /** plan de la semana por fecha */
-  plan: Record<string, string[]>;
-  /** objetivos por fecha */
-  targets: Record<string, DayTargets>;
+  /** Estado de cada día (computeDay) con las porciones reales de esa persona. */
+  days: Record<string, DayLines>;
   pregnant: boolean;
 }
 
@@ -23,17 +19,7 @@ export interface ShoppingItem {
   aisle: Aisle;
 }
 
-export function portionLines(slug: string, t: DayTargets, slot: number, pregnant: boolean): (RecipeLine & { rawG: number })[] {
-  const recipe = RECIPE_BY_SLUG[slug];
-  const portion = scaleRecipe(recipe, { proteinG: t.proteinSlots[slot], kcal: t.kcalSlots[slot] });
-  if (!pregnant) return portion.lines;
-  const view = pregnancyView({ ...recipe, lines: portion.lines });
-  return view.lines.map((v) => {
-    const food = FOODS[v.line.food];
-    const g = v.line.g;
-    return { ...v.line, rawG: food.rawYield ? Math.round(g / food.rawYield) : g };
-  });
-}
+const linesOf = (person: PersonWeek, date: string) => person.days[date]?.slots.flatMap((s) => s.portion.lines) ?? [];
 
 function labelFor(foodKey: string, rawG: number): string {
   const f = FOODS[foodKey];
@@ -53,12 +39,7 @@ function labelFor(foodKey: string, rawG: number): string {
 export function buildShoppingList(people: PersonWeek[], opts: { pantryStaples?: boolean } = {}): Record<Aisle, ShoppingItem[]> {
   const totals: Record<string, number> = {};
   for (const person of people) {
-    for (const [date, slugs] of Object.entries(person.plan)) {
-      const t = person.targets[date];
-      slugs.forEach((slug, slot) => {
-        for (const l of portionLines(slug, t, slot, person.pregnant)) totals[l.food] = (totals[l.food] ?? 0) + l.rawG;
-      });
-    }
+    for (const date of Object.keys(person.days)) for (const l of linesOf(person, date)) totals[l.food] = (totals[l.food] ?? 0) + l.rawG;
   }
   const grouped = Object.fromEntries(AISLE_ORDER.map((a) => [a, [] as ShoppingItem[]])) as Record<Aisle, ShoppingItem[]>;
   for (const [food, rawG] of Object.entries(totals)) {
@@ -89,10 +70,8 @@ export function mealPrepTips(people: PersonWeek[], week: string[]): PrepTip[] {
   const vegs: Record<string, number> = {};
   week.forEach((date, di) => {
     for (const person of people) {
-      const slugs = person.plan[date];
-      if (!slugs) continue;
-      slugs.forEach((slug, slot) => {
-        for (const l of portionLines(slug, person.targets[date], slot, person.pregnant)) {
+      {
+        for (const l of linesOf(person, date)) {
           const f = FOODS[l.food];
           if (l.role === "protein" && f.aisle === "Carnes y aves" && di <= 4) raw[l.food] = (raw[l.food] ?? 0) + l.rawG;
           else if (l.role === "protein" && f.aisle === "Pescados y mariscos") fishRaw[l.food] = (fishRaw[l.food] ?? 0) + l.rawG;
@@ -100,7 +79,7 @@ export function mealPrepTips(people: PersonWeek[], week: string[]): PrepTip[] {
           else if (["lentejas", "frijoles", "garbanzo"].includes(l.food)) legumes[l.food] = (legumes[l.food] ?? 0) + l.rawG;
           else if (f.aisle === "Verduras" && l.food !== "aguacate" && l.food !== "lechuga") vegs[l.food] = (vegs[l.food] ?? 0) + l.rawG;
         }
-      });
+      }
     }
   });
   const list = (m: Record<string, number>) =>

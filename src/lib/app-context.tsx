@@ -47,7 +47,7 @@ async function seedLocal(db: Db): Promise<void> {
   const existing = await db.select<Profile>("profiles");
   if (existing.length) return;
   const base = { household_id: LOCAL_HOUSEHOLD_ID, meal_times: defaultMealTimes(), onboarding_done: false, medical_ack: false, uses_glp1: false, waist_cm: null, hip_cm: null, neck_cm: null, training_time: null, training_place: null, goal_weight_kg: null, pre_pregnancy_weight_kg: null, age: null };
-  const jose = await db.insert<Profile>("profiles", { ...base, slug: "jose", name: "Jose", mode: "fat_loss", sex: "male", height_cm: 178, start_weight_kg: 123, current_weight_kg: 123, protein_anchor_weight_kg: 123, training_days: DEFAULT_TRAINING_DAYS, due_date: null });
+  const jose = await db.insert<Profile>("profiles", { ...base, slug: "jose", name: "Jose", mode: "fat_loss", sex: "male", height_cm: 178, start_weight_kg: 123, current_weight_kg: 123, protein_anchor_weight_kg: 123, training_days: DEFAULT_TRAINING_DAYS, due_date: null, diet_plan: "ciclo3", plan_weigh: "cocido" });
   await db.insert<Profile>("profiles", { ...base, slug: "esposa", name: "Yanina", mode: "pregnancy", sex: "female", height_cm: 160, start_weight_kg: null, current_weight_kg: null, protein_anchor_weight_kg: null, training_days: [], due_date: "2027-04-15" });
   await db.insert<KneeProfile>("knee_profiles", { household_id: LOCAL_HOUSEHOLD_ID, profile_id: jose.id, side: "right", diagnosis: "none", surgery_type: null, surgery_months_ago: null, pain_rest: 0, pain_stairs: 0, pain_chair: 0, ortho_clearance: false, start_date: todayISO(), phase_override: null, excluded_exercises: [] });
 }

@@ -49,6 +49,14 @@ const LIST: Food[] = [
   { key: "avena", name: "avena en hojuelas (en seco)", per100: m(380, 13, 67, 7, 10), aisle: "Granos y tubérculos", measure: { label: "cucharada", plural: "cucharadas", g: 10 } },
   { key: "pan_int", name: "pan integral", per100: m(250, 10, 45, 3.5, 6), aisle: "Granos y tubérculos", measure: { label: "tajada", plural: "tajadas", g: 30 } },
 
+  // Carbohidratos del plan del nutricionista (cocidos sin aceite)
+  { key: "papa", name: "papa cocida", per100: m(87, 1.9, 20, 0.1, 1.8), aisle: "Granos y tubérculos", rawYield: 0.95, measure: { label: "papa mediana", plural: "papas medianas", g: 150 } },
+  { key: "platano_hervido", name: "plátano verde cocido", per100: m(116, 0.8, 31, 0.2, 2.3), aisle: "Granos y tubérculos", rawYield: 0.9, measure: { label: "plátano verde", plural: "plátanos verdes", g: 180 }, unit: { singular: "plátano verde", plural: "plátanos verdes", rawG: 250 } },
+  { key: "guineo", name: "guineo verde cocido", per100: m(90, 1.1, 23, 0.2, 2.4), aisle: "Granos y tubérculos", rawYield: 0.9, measure: { label: "guineo", plural: "guineos", g: 90 }, unit: { singular: "guineo verde", plural: "guineos verdes", rawG: 110 } },
+  { key: "pasta_arroz", name: "pasta de arroz cocida", per100: m(108, 1.8, 24, 0.2, 1), aisle: "Granos y tubérculos", rawYield: 2.4, measure: { label: "taza", plural: "tazas", g: 175 } },
+  { key: "zaragoza", name: "fríjol zaragoza rojo cocido", per100: m(127, 8.7, 22.8, 0.5, 6.4), aisle: "Granos y tubérculos", rawYield: 2.3, measure: { label: "taza", plural: "tazas", g: 180 }, tags: ["hierro"] },
+  { key: "avena_cocida", name: "avena cocida en agua", per100: m(71, 2.5, 12, 1.5, 1.7), aisle: "Granos y tubérculos", measure: { label: "taza", plural: "tazas", g: 234 } },
+
   // ── Frutas
   { key: "mango", name: "mango", per100: m(60, 0.8, 15, 0.4, 1.6), aisle: "Frutas", measure: { label: "taza en trozos", plural: "tazas en trozos", g: 165 } },
   { key: "guayaba", name: "guayaba", per100: m(68, 2.6, 14, 1, 5.4), aisle: "Frutas", measure: { label: "guayaba", plural: "guayabas", g: 90 }, unit: { singular: "guayaba", plural: "guayabas", rawG: 100 } },
@@ -57,6 +65,12 @@ const LIST: Food[] = [
   { key: "fresa", name: "fresas", per100: m(32, 0.7, 7.7, 0.3, 2), aisle: "Frutas", measure: { label: "taza", plural: "tazas", g: 150 } },
   { key: "patilla", name: "patilla", per100: m(30, 0.6, 7.6, 0.2, 0.4), aisle: "Frutas", measure: { label: "taza en trozos", plural: "tazas en trozos", g: 150 } },
   { key: "maracuya", name: "pulpa de maracuyá", per100: m(97, 2.2, 23, 0.7, 10), aisle: "Frutas", measure: { label: "maracuyá", plural: "maracuyás", g: 18 } },
+
+  { key: "kiwi", name: "kiwi", per100: m(61, 1.1, 15, 0.5, 3), aisle: "Frutas", measure: { label: "kiwi", plural: "kiwis", g: 75 }, unit: { singular: "kiwi", plural: "kiwis", rawG: 80 } },
+  { key: "manzana_verde", name: "manzana verde", per100: m(52, 0.3, 14, 0.2, 2.4), aisle: "Frutas", measure: { label: "manzana mediana", plural: "manzanas medianas", g: 180 }, unit: { singular: "manzana verde", plural: "manzanas verdes", rawG: 180 } },
+  { key: "pera_verde", name: "pera verde", per100: m(57, 0.4, 15, 0.1, 3.1), aisle: "Frutas", measure: { label: "pera mediana", plural: "peras medianas", g: 170 }, unit: { singular: "pera verde", plural: "peras verdes", rawG: 180 } },
+  { key: "mango_verde", name: "mango verde", per100: m(55, 0.8, 13, 0.3, 1.8), aisle: "Frutas", measure: { label: "taza en trozos", plural: "tazas en trozos", g: 165 } },
+  { key: "pomelo", name: "pomelo", per100: m(42, 0.8, 11, 0.1, 1.6), aisle: "Frutas", measure: { label: "medio pomelo", plural: "medios pomelos", g: 120 } },
 
   // ── Verduras
   { key: "ahuyama", name: "ahuyama", per100: m(40, 1, 10, 0.1, 1.5), aisle: "Verduras", rawYield: 0.95, measure: { label: "taza", plural: "tazas", g: 200 } },

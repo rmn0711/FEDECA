@@ -58,6 +58,10 @@ export interface Profile {
   meal_times: string[]; // 6 horas HH:MM
   onboarding_done: boolean;
   medical_ack: boolean;
+  /** Plan de alimentación (solo pérdida de grasa): "ciclo3" = plan del nutricionista de 3 días; "app" = menú calculado por la app. */
+  diet_plan?: "app" | "ciclo3" | null;
+  /** Cómo se pesan las proteínas del plan del nutricionista. */
+  plan_weigh?: "cocido" | "crudo" | null;
   created_at?: string;
 }
 

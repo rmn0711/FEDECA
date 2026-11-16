@@ -10,7 +10,7 @@ import { useApp } from "@/lib/app-context";
 import { computeDay } from "@/lib/day";
 import { num, time12 } from "@/lib/format";
 import { useTable } from "@/lib/hooks";
-import { RECIPE_BY_SLUG } from "@/data/recipes";
+import { getRecipe, planAlternative } from "@/lib/plan/ciclo3";
 import { adaptForPregnancy } from "@/lib/menu/adapt";
 import { scaleRecipe, snackHeading } from "@/lib/menu/core";
 import { findSubstitute, planWeek, type OverrideMap } from "@/lib/menu/planner";
@@ -24,13 +24,14 @@ export default function RecipePage() {
   const sp = useSearchParams();
   const router = useRouter();
   const { active, today, householdId, prefs, setPref, prefRows } = useApp();
+  const isPlan = slug.startsWith("plan-");
   const date = sp.get("date") ?? today;
   const slotParam = sp.get("slot");
   const ov = useTable<MenuOverride>("menu_overrides", { match: { household_id: householdId }, range: { col: "date", from: date, to: date } }, [date]);
   const overrides: OverrideMap = useMemo(() => Object.fromEntries(ov.rows.map((o) => [`${o.date}:${o.slot}`, o.recipe_slug])), [ov.rows]);
   const [msg, setMsg] = useState<string | null>(null);
 
-  const base = RECIPE_BY_SLUG[slug];
+  const base = getRecipe(slug);
   const view = useMemo(() => {
     if (!active || !base) return null;
     const d = computeDay({ profile: active, date, today, overrides, logs: [], prefs });
@@ -47,12 +48,19 @@ export default function RecipePage() {
   const snack = base.kind === "snack";
   const m = view.portion.macros;
 
+  /** Tras un cambio, abre la toma recalculada (el plan puede ajustar gramos por el mínimo de kcal). */
+  function goToSlot(slot: number, nextOverrides: OverrideMap, nextPrefs = prefs) {
+    const d = computeDay({ profile: active!, date, today, overrides: nextOverrides, logs: [], prefs: nextPrefs });
+    router.replace(`/receta/${d.slots[slot].recipe.slug}?date=${date}&slot=${slot}`);
+  }
+
   async function dislike(food: string, name: string) {
     await setPref(active!.id, food, "dislike");
     if (view?.slot == null) return setMsg(`Listo: ${name} ya no aparecerá en tu menú.`);
     const next = buildPrefs([...prefRows.filter((r) => !(r.profile_id === active!.id && r.food_key === food)), { food_key: food, pref: "dislike" }]);
+    if (isPlan) return goToSlot(view.slot, overrides, next);
     const week = Object.values(planWeek(date, overrides, next)).flat();
-    const sub = findSubstitute(base, week, { prefs: next });
+    const sub = findSubstitute(base!, week, { prefs: next });
     if (!sub) return setMsg("Guardé tu gusto, pero no encontré un plato equivalente por ahora.");
     await ov.upsert({ household_id: householdId, date, slot: view.slot as SlotId, recipe_slug: sub.slug, reason: `no me gusta ${name}` }, ["household_id", "date", "slot"]);
     router.replace(`/receta/${sub.slug}?date=${date}&slot=${view.slot}`);
@@ -60,8 +68,14 @@ export default function RecipePage() {
 
   async function swap() {
     if (view?.slot == null) return;
+    if (isPlan) {
+      const alt = planAlternative(slug, prefs);
+      if (!alt) return setMsg("No hay otra opción permitida para esta toma.");
+      await ov.upsert({ household_id: householdId, date, slot: (10 + view.slot) as SlotId, recipe_slug: alt, reason: "plan" }, ["household_id", "date", "slot"]);
+      return goToSlot(view.slot, { ...overrides, [`${date}:${10 + view.slot}`]: alt });
+    }
     const week = Object.values(planWeek(date, overrides, prefs)).flat();
-    const sub = findSubstitute(base, week, { prefs });
+    const sub = findSubstitute(base!, week, { prefs });
     if (!sub) return setMsg("No hay un plato equivalente disponible.");
     await ov.upsert({ household_id: householdId, date, slot: view.slot as SlotId, recipe_slug: sub.slug, reason: "no me provoca" }, ["household_id", "date", "slot"]);
     router.replace(`/receta/${sub.slug}?date=${date}&slot=${view.slot}`);
@@ -105,7 +119,7 @@ export default function RecipePage() {
 
       {view.slot !== null && <div className="flex flex-wrap gap-2"><Button variant="soft" onClick={swap}>No tengo esto / no me provoca</Button></div>}
       {msg && <p role="status" className="text-sm text-clay">{msg}</p>}
-      <Chip tone="sky">Menú compartido: el cambio aplica a los dos</Chip>
+      {isPlan ? <Chip tone="sky">Plan del nutricionista · Día {base.tags.find((t) => t.startsWith("día"))?.slice(4)}</Chip> : <Chip tone="sky">Menú compartido: el cambio aplica a los dos</Chip>}
     </article>
   );
 }

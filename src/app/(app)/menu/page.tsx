@@ -53,7 +53,7 @@ export default function MenuPage() {
               <div className="min-w-0 flex-1">
                 <p className="text-xs text-muted">{s.label} · {time12(s.baseTime)}</p>
                 <p className="font-display text-base font-semibold leading-snug">{s.recipe.kind === "snack" ? snackHeading(s.recipe, s.portion.lines).title : s.recipe.name}</p>
-                <p className="mt-1 line-clamp-2 text-xs text-muted">{s.recipe.kind === "snack" ? snackHeading(s.recipe, s.portion.lines).detail : plateSummary(s.portion.lines)}</p>
+                <p className="mt-1 line-clamp-2 text-xs text-muted">{s.recipe.kind === "snack" && !s.recipe.slug.startsWith("plan-") ? snackHeading(s.recipe, s.portion.lines).detail : plateSummary(s.portion.lines)}</p>
                 <div className="mt-1 flex flex-wrap gap-1.5"><Chip tone="brand">{num(Math.round(s.portion.macros.p))} g proteína</Chip><Chip>{num(Math.round(s.portion.macros.kcal))} kcal</Chip></div>
               </div>
             </Link>

@@ -7,7 +7,7 @@ import { RECIPE_BY_SLUG } from "@/data/recipes";
 import type { Profile } from "@/lib/types";
 
 const base = { household_id: "h", age: 35, height_cm: 170, start_weight_kg: 120, current_weight_kg: 120, goal_weight_kg: 100, waist_cm: null, hip_cm: null, neck_cm: null, training_time: "17:30", training_place: "gym" as const, uses_glp1: false, protein_anchor_weight_kg: 120, meal_times: defaultMealTimes(), onboarding_done: true, medical_ack: true };
-const jose: Profile = { ...base, id: "j", slug: "jose", name: "Jose", mode: "fat_loss", sex: "male", pre_pregnancy_weight_kg: null, due_date: null, training_days: [1, 2, 4, 5] };
+const jose: Profile = { ...base, id: "j", slug: "jose", name: "Jose", mode: "fat_loss", sex: "male", pre_pregnancy_weight_kg: null, due_date: null, training_days: [1, 2, 4, 5], diet_plan: "app" };
 const yani: Profile = { ...base, id: "y", slug: "esposa", name: "Yanina", mode: "pregnancy", sex: "female", height_cm: 162, current_weight_kg: 63, start_weight_kg: null, pre_pregnancy_weight_kg: 58, due_date: "2027-04-15", training_days: [], training_time: null, training_place: null, protein_anchor_weight_kg: null };
 
 describe("preparación de mañana", () => {

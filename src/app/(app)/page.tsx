@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useState } from "react";
-import { Activity, Baby, ChevronRight, Dumbbell, LineChart, ShoppingBasket, ThumbsUp, UtensilsCrossed, ChefHat, Wine, Droplets, Plus, Flame } from "lucide-react";
+import { Activity, Baby, ChevronRight, Dumbbell, LineChart, ShoppingBasket, ThumbsUp, UtensilsCrossed, ChefHat, ClipboardList, Wine, Droplets, Plus, Flame } from "lucide-react";
 import { Bar, Button, Card, Chip, Eyebrow, H1, H2, Notice, Segments, Stat } from "@/components/ui";
 import { FoodArt } from "@/components/FoodArt";
 import { ProfileSwitch } from "@/components/ProfileSwitch";
@@ -16,6 +16,7 @@ import { SESSION_INFO, sessionForDay } from "@/lib/exercise/plan";
 import { useTable } from "@/lib/hooks";
 import { rapidLossWarning } from "@/lib/nutrition/calc";
 import { useToday } from "@/lib/use-day";
+import { DAY_RULES } from "@/lib/plan/ciclo3";
 import type { WeightLog } from "@/lib/types";
 
 export default function Home() {
@@ -42,11 +43,13 @@ export default function Home() {
     if (days.every((d) => d.has) && proteinShortfallAlert(days)) alerts.push({ tone: "clay", title: "Proteína corta dos días seguidos", text: "Con medicamento para bajar de peso, la proteína protege tu músculo. Empieza cada comida por la proteína y prioriza las meriendas." });
   }
   if (!pregnant && rapidLossWarning(weights.rows.map((w) => ({ date: w.date, kg: w.weight_kg })))) alerts.push({ tone: "clay", title: "Estás bajando muy rápido", text: "Llevas más de 1,5 % de tu peso por semana durante 3 semanas. Conviene revisarlo con tu médico." });
+  if ((day.targets.planBelowFloor ?? 0) > 0) alerts.push({ tone: "sun", title: "Hoy el plan queda corto de calorías", text: `Faltan ${num(day.targets.planBelowFloor!)} kcal para tu mínimo de 1.800 incluso con el complemento. Suma más vegetales y no te saltes ninguna toma; si pasa seguido, revísalo con un nutricionista.` });
   if (day.unallocatedProtein > 0) alerts.push({ tone: "sun", title: "Proteína que no alcanzó a repartirse", text: `Quedaron ${num(day.unallocatedProtein)} g sin repartir (máximo 45 g por toma). Suma una merienda proteica si puedes.` });
   if (day.alcoholKcal > 0) alerts.push({ tone: "sky", title: "Alcohol registrado hoy", text: `Descontamos ${num(day.alcoholKcal)} kcal de las tomas que faltan, sin quitar proteína.` });
 
   const links = [
     { href: "/menu", label: "Menú de la semana", Icon: UtensilsCrossed },
+    ...(!pregnant ? [{ href: "/plan", label: "Plan del nutricionista", Icon: ClipboardList }] : []),
     { href: "/manana", label: "Preparar para mañana", Icon: ChefHat },
     { href: "/mercado", label: "Lista de mercado", Icon: ShoppingBasket },
     { href: "/gustos", label: "Lo que me gusta", Icon: ThumbsUp },
@@ -62,6 +65,17 @@ export default function Home() {
         <ProfileSwitch />
         <H1>Hola, {active.name}</H1>
       </header>
+
+      {day.targets.planDayType && (
+        <Link href="/plan" className="flex items-center justify-between gap-3 rounded-3xl bg-surface p-4">
+          <span>
+            <span className="block text-xs font-medium uppercase tracking-wider text-muted">Plan del nutricionista</span>
+            <span className="block font-display text-lg font-semibold">{DAY_RULES[day.targets.planDayType].name}</span>
+            <span className="block text-sm text-ink/80">{DAY_RULES[day.targets.planDayType].short}.</span>
+          </span>
+          <ChevronRight size={18} aria-hidden />
+        </Link>
+      )}
 
       {pregnant && active.due_date && <Link href="/embarazo" className="block"><BabyCard dueDate={active.due_date} today={today} compact /></Link>}
 
@@ -110,7 +124,7 @@ export default function Home() {
             <FoodArt art={next.recipe.art} className="h-24 w-32 shrink-0 rounded-2xl" />
             <div className="min-w-0">
               <Link href={`/receta/${next.recipe.slug}?slot=${next.slot}`} className="font-display text-lg font-semibold leading-snug underline-offset-4 hover:underline">{next.recipe.kind === "snack" ? snackHeading(next.recipe, next.portion.lines).title : next.recipe.name}</Link>
-              <p className="mt-1 text-sm text-ink/80">{next.recipe.kind === "snack" ? snackHeading(next.recipe, next.portion.lines).detail : plateSummary(next.portion.lines)}</p>
+              <p className="mt-1 text-sm text-ink/80">{next.recipe.kind === "snack" && !next.recipe.slug.startsWith("plan-") ? snackHeading(next.recipe, next.portion.lines).detail : plateSummary(next.portion.lines)}</p>
               <p className="mt-1 text-sm font-medium tabular">{g(Math.round(next.portion.macros.p))} de proteína · {num(Math.round(next.portion.macros.kcal))} kcal</p>
             </div>
           </div>
@@ -163,7 +177,7 @@ export default function Home() {
         </Card>
       </div>
       <Card className="flex items-center justify-between">
-        <Stat label="Calorías de hoy" value={<>{num(Math.round(day.eatenKcal))} <span className="text-base font-normal text-muted">/ {num(day.targets.kcal)} kcal</span></>} sub={pregnant ? `Mantenimiento + ${day.targets.addKcal} kcal · semana ${day.targets.week} (trimestre ${day.targets.trimester})` : day.targets.isLegDay ? "Día de pierna: +carbohidrato antes y después" : undefined} />
+        <Stat label="Calorías de hoy" value={<>{num(Math.round(day.eatenKcal))} <span className="text-base font-normal text-muted">/ {num(day.targets.kcal)} kcal</span></>} sub={pregnant ? `Mantenimiento + ${day.targets.addKcal} kcal · semana ${day.targets.week} (trimestre ${day.targets.trimester})` : day.targets.planDayType ? `Plan del nutricionista · Día ${day.targets.planDayType}${day.targets.planFloorKcal ? ` · incluye ${num(day.targets.planFloorKcal)} kcal de complemento` : ""}` : day.targets.isLegDay ? "Día de pierna: +carbohidrato antes y después" : undefined} />
         <Activity size={20} className="text-muted" aria-hidden />
       </Card>
 

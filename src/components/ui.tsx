@@ -34,7 +34,7 @@ export function Button({ variant = "primary", size = "md", className, ...p }: Bt
 
 export function Chip({ children, tone = "surface" }: { children: ReactNode; tone?: "surface" | "brand" | "clay" | "sun" | "sky" | "plum" }) {
   const t = { surface: "bg-surface-2 text-ink", brand: "bg-brand-soft text-brand", clay: "bg-clay-soft text-clay", sun: "bg-sun-soft text-sun", sky: "bg-sky-soft text-sky", plum: "bg-plum-soft text-plum" }[tone];
-  return <span className={cx("inline-flex items-center rounded-full px-3 py-1 text-xs font-medium", t)}>{children}</span>;
+  return <span className={cx("inline-flex items-center whitespace-nowrap rounded-full px-3 py-1 text-xs font-medium", t)}>{children}</span>;
 }
 
 export function Notice({ tone = "sun", title, children }: { tone?: "sun" | "clay" | "brand" | "sky" | "plum"; title?: string; children: ReactNode }) {
